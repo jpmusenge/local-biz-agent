@@ -8,7 +8,22 @@ export { enrichment } from './modules/enrichment/index.js';
 export { generator } from './modules/generator/index.js';
 export { deployment } from './modules/deployment/index.js';
 export { outreach } from './modules/outreach/index.js';
-export { db } from './database/index.js';
+export { db, DatabaseManager } from './database/index.js';
+export type {
+  Business,
+  BusinessInsert,
+  BusinessUpdate,
+  BusinessStatus,
+  BusinessSource,
+  BusinessQueryOptions,
+  GeneratedWebsite,
+  WebsiteInsert,
+  WebsiteUpdate,
+  OutreachLog,
+  OutreachInsert,
+  OutreachMethod,
+  DatabaseStats,
+} from './database/index.js';
 export { config } from './config/index.js';
 
 console.log('Local Biz Agent initialized');
