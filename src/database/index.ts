@@ -81,6 +81,7 @@ class DatabaseManager {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         business_type TEXT,
+        category TEXT,
         address TEXT,
         city TEXT,
         state TEXT,
@@ -91,6 +92,7 @@ class DatabaseManager {
         has_website INTEGER DEFAULT 0,
         source TEXT NOT NULL,
         source_id TEXT,
+        google_place_id TEXT,
         discovered_at TEXT NOT NULL,
         enriched_at TEXT,
         status TEXT DEFAULT 'discovered',
@@ -126,14 +128,21 @@ class DatabaseManager {
       CREATE INDEX IF NOT EXISTS idx_businesses_status ON businesses(status);
       CREATE INDEX IF NOT EXISTS idx_businesses_source ON businesses(source);
       CREATE INDEX IF NOT EXISTS idx_businesses_state ON businesses(state);
+      CREATE INDEX IF NOT EXISTS idx_businesses_city ON businesses(city);
+      CREATE INDEX IF NOT EXISTS idx_businesses_category ON businesses(category);
       CREATE INDEX IF NOT EXISTS idx_businesses_has_website ON businesses(has_website);
       CREATE INDEX IF NOT EXISTS idx_businesses_discovered_at ON businesses(discovered_at);
+      CREATE INDEX IF NOT EXISTS idx_businesses_google_place_id ON businesses(google_place_id);
       CREATE INDEX IF NOT EXISTS idx_generated_websites_business_id ON generated_websites(business_id);
       CREATE INDEX IF NOT EXISTS idx_outreach_log_business_id ON outreach_log(business_id);
 
       -- Unique constraint to prevent duplicate source records
       CREATE UNIQUE INDEX IF NOT EXISTS idx_businesses_source_unique
         ON businesses(source, source_id) WHERE source_id IS NOT NULL;
+
+      -- Unique constraint for Google Place ID
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_businesses_google_place_id_unique
+        ON businesses(google_place_id) WHERE google_place_id IS NOT NULL;
     `);
   }
 
@@ -155,12 +164,12 @@ class DatabaseManager {
 
     const stmt = db.prepare(`
       INSERT INTO businesses (
-        id, name, business_type, address, city, state, county,
-        phone, email, website_url, has_website, source, source_id,
+        id, name, business_type, category, address, city, state, county,
+        phone, email, website_url, has_website, source, source_id, google_place_id,
         discovered_at, enriched_at, status, created_at, updated_at
       ) VALUES (
-        @id, @name, @business_type, @address, @city, @state, @county,
-        @phone, @email, @website_url, @has_website, @source, @source_id,
+        @id, @name, @business_type, @category, @address, @city, @state, @county,
+        @phone, @email, @website_url, @has_website, @source, @source_id, @google_place_id,
         @discovered_at, @enriched_at, @status, @created_at, @updated_at
       )
     `);
@@ -169,6 +178,7 @@ class DatabaseManager {
       id,
       name: data.name,
       business_type: data.business_type ?? null,
+      category: data.category ?? null,
       address: data.address ?? null,
       city: data.city ?? null,
       state: data.state ?? null,
@@ -179,6 +189,7 @@ class DatabaseManager {
       has_website: data.has_website ?? 0,
       source: data.source,
       source_id: data.source_id ?? null,
+      google_place_id: data.google_place_id ?? null,
       discovered_at: data.discovered_at ?? now,
       enriched_at: null,
       status: data.status ?? 'discovered',
@@ -196,12 +207,12 @@ class DatabaseManager {
 
     const stmt = db.prepare(`
       INSERT OR IGNORE INTO businesses (
-        id, name, business_type, address, city, state, county,
-        phone, email, website_url, has_website, source, source_id,
+        id, name, business_type, category, address, city, state, county,
+        phone, email, website_url, has_website, source, source_id, google_place_id,
         discovered_at, enriched_at, status, created_at, updated_at
       ) VALUES (
-        @id, @name, @business_type, @address, @city, @state, @county,
-        @phone, @email, @website_url, @has_website, @source, @source_id,
+        @id, @name, @business_type, @category, @address, @city, @state, @county,
+        @phone, @email, @website_url, @has_website, @source, @source_id, @google_place_id,
         @discovered_at, @enriched_at, @status, @created_at, @updated_at
       )
     `);
@@ -213,6 +224,7 @@ class DatabaseManager {
           id: data.id ?? randomUUID(),
           name: data.name,
           business_type: data.business_type ?? null,
+          category: data.category ?? null,
           address: data.address ?? null,
           city: data.city ?? null,
           state: data.state ?? null,
@@ -223,6 +235,7 @@ class DatabaseManager {
           has_website: data.has_website ?? 0,
           source: data.source,
           source_id: data.source_id ?? null,
+          google_place_id: data.google_place_id ?? null,
           discovered_at: data.discovered_at ?? now,
           enriched_at: null,
           status: data.status ?? 'discovered',
@@ -280,6 +293,14 @@ class DatabaseManager {
     if (options.state) {
       conditions.push('state = ?');
       params.push(options.state);
+    }
+    if (options.city) {
+      conditions.push('city = ?');
+      params.push(options.city);
+    }
+    if (options.category) {
+      conditions.push('category = ?');
+      params.push(options.category);
     }
     if (options.hasWebsite !== undefined) {
       conditions.push('has_website = ?');
@@ -636,6 +657,15 @@ class DatabaseManager {
       'SELECT 1 FROM businesses WHERE source = ? AND source_id = ? LIMIT 1'
     );
     return stmt.get(source, sourceId) !== undefined;
+  }
+
+  // Check if business exists by Google Place ID
+  businessExistsByGooglePlaceId(placeId: string): boolean {
+    const db = this.getInstance();
+    const stmt = db.prepare(
+      'SELECT 1 FROM businesses WHERE google_place_id = ? LIMIT 1'
+    );
+    return stmt.get(placeId) !== undefined;
   }
 
   // Get raw database instance for advanced queries

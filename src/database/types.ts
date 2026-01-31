@@ -10,8 +10,8 @@ export type BusinessStatus =
   | 'contacted'
   | 'sold';
 
-// Source registries
-export type BusinessSource = 'ms_sos' | 'tn_sos' | 'al_sos' | 'la_sos' | 'ar_sos' | string;
+// Source registries / discovery sources
+export type BusinessSource = 'google_places' | 'ms_sos' | 'tn_sos' | 'al_sos' | 'la_sos' | 'ar_sos' | string;
 
 // Outreach methods
 export type OutreachMethod = 'email' | 'phone' | 'in_person';
@@ -21,6 +21,7 @@ export interface Business {
   id: string;
   name: string;
   business_type: string | null;
+  category: string | null;        // Business category (e.g., "restaurant", "barber_shop")
   address: string | null;
   city: string | null;
   state: string | null;
@@ -28,9 +29,10 @@ export interface Business {
   phone: string | null;
   email: string | null;
   website_url: string | null;
-  has_website: number; // 0 or 1 (SQLite boolean)
+  has_website: number;            // 0 or 1 (SQLite boolean)
   source: BusinessSource;
   source_id: string | null;
+  google_place_id: string | null; // Google Places API place_id for deduplication
   discovered_at: string;
   enriched_at: string | null;
   status: BusinessStatus;
@@ -40,9 +42,10 @@ export interface Business {
 
 // Business insert (without auto-generated fields)
 export interface BusinessInsert {
-  id?: string; // Optional - will generate UUID if not provided
+  id?: string;                     // Optional - will generate UUID if not provided
   name: string;
   business_type?: string | null;
+  category?: string | null;        // Business category (e.g., "restaurant", "barber_shop")
   address?: string | null;
   city?: string | null;
   state?: string | null;
@@ -53,6 +56,7 @@ export interface BusinessInsert {
   has_website?: number;
   source: BusinessSource;
   source_id?: string | null;
+  google_place_id?: string | null; // Google Places API place_id
   discovered_at?: string;
   status?: BusinessStatus;
 }
@@ -61,6 +65,7 @@ export interface BusinessInsert {
 export interface BusinessUpdate {
   name?: string;
   business_type?: string | null;
+  category?: string | null;
   address?: string | null;
   city?: string | null;
   state?: string | null;
@@ -71,6 +76,7 @@ export interface BusinessUpdate {
   has_website?: number;
   source?: BusinessSource;
   source_id?: string | null;
+  google_place_id?: string | null;
   enriched_at?: string | null;
   status?: BusinessStatus;
 }
@@ -131,6 +137,8 @@ export interface BusinessQueryOptions {
   status?: BusinessStatus;
   source?: BusinessSource;
   state?: string;
+  city?: string;
+  category?: string;
   hasWebsite?: boolean;
   limit?: number;
   offset?: number;

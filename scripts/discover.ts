@@ -1,44 +1,125 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Discovery Script
- * Run business discovery from state registries
+ * Discover businesses without websites using Google Places API
  *
- * Usage: npm run discover -- --states=CA,TX --days=7
+ * Usage:
+ *   npm run discover                    # Run with default areas and categories
+ *   npm run discover -- --mock          # Force mock mode (for testing)
+ *   npm run discover -- --limit=50      # Limit results per search
+ *
+ * Default target areas: Holly Springs MS and surrounding cities
+ * Default categories: Barber shops, restaurants, auto repair, salons
  */
 
 import 'dotenv/config';
-import { discovery } from '../src/modules/discovery/index.js';
+import { DiscoveryService, BusinessCategory, CATEGORY_LABELS } from '../src/modules/discovery/index.js';
 import { db } from '../src/database/index.js';
 import { logger } from '../src/utils/index.js';
 
 async function main(): Promise<void> {
-  logger.info('Starting business discovery...');
-
-  // Initialize database
-  db.init();
+  console.log('='.repeat(60));
+  console.log('LOCAL BIZ AGENT - BUSINESS DISCOVERY');
+  console.log('='.repeat(60));
+  console.log('');
 
   // Parse command line arguments
   const args = process.argv.slice(2);
-  const statesArg = args.find((arg) => arg.startsWith('--states='));
-  const daysArg = args.find((arg) => arg.startsWith('--days='));
+  const limitArg = args.find((arg) => arg.startsWith('--limit='));
+  const maxResultsPerSearch = limitArg ? parseInt(limitArg.split('=')[1] ?? '20', 10) : 20;
 
-  const states = statesArg ? statesArg.split('=')[1]?.split(',') ?? [] : ['CA'];
-  const daysBack = daysArg ? parseInt(daysArg.split('=')[1] ?? '7', 10) : 7;
+  // Define target areas - Holly Springs, MS and surrounding cities
+  const areas = [
+    { city: 'Holly Springs', state: 'MS', radiusMiles: 10 },
+    { city: 'Oxford', state: 'MS', radiusMiles: 10 },
+    { city: 'Tupelo', state: 'MS', radiusMiles: 15 },
+    { city: 'Southaven', state: 'MS', radiusMiles: 10 },
+  ];
 
-  logger.info(`Discovering businesses from states: ${states.join(', ')}`);
-  logger.info(`Looking back ${daysBack} days`);
+  // Define target business categories
+  // Focus on service businesses that benefit most from a web presence
+  const categories = [
+    BusinessCategory.BARBER_SHOP,
+    BusinessCategory.RESTAURANT,
+    BusinessCategory.AUTO_REPAIR,
+    BusinessCategory.SALON,
+  ];
+
+  logger.info('Target Areas:');
+  for (const area of areas) {
+    logger.info(`  - ${area.city}, ${area.state} (${area.radiusMiles} mile radius)`);
+  }
+
+  logger.info('');
+  logger.info('Target Categories:');
+  for (const cat of categories) {
+    logger.info(`  - ${CATEGORY_LABELS[cat]}`);
+  }
+
+  logger.info('');
+  logger.info(`Max results per search: ${maxResultsPerSearch}`);
+  logger.info('');
+
+  // Initialize database
+  db.initialize();
 
   try {
-    const businesses = await discovery.discoverBusinesses({
-      states,
-      daysBack,
+    // Create and run discovery service
+    const discovery = new DiscoveryService({
+      areas,
+      categories,
+      maxResultsPerSearch,
+      onlyOperational: true,
     });
 
-    logger.info(`Found ${businesses.length} new businesses`);
+    const summary = await discovery.run();
 
-    // TODO: Save to database
+    // Print detailed summary
+    console.log('');
+    console.log('='.repeat(60));
+    console.log('DISCOVERY SUMMARY');
+    console.log('='.repeat(60));
+    console.log('');
 
-    logger.info('Discovery complete!');
+    console.log('Overall Results:');
+    console.log(`  Total places found:      ${summary.totalFound}`);
+    console.log(`  Without websites:        ${summary.withoutWebsite}`);
+    console.log(`  Newly saved to database: ${summary.newlySaved}`);
+    console.log(`  Already in database:     ${summary.alreadyExists}`);
+    console.log('');
+
+    console.log('By Category:');
+    for (const [category, stats] of Object.entries(summary.byCategory)) {
+      console.log(`  ${category}:`);
+      console.log(`    Found: ${stats.found}, Without Website: ${stats.withoutWebsite}, Saved: ${stats.saved}`);
+    }
+    console.log('');
+
+    console.log('By Area:');
+    for (const [area, stats] of Object.entries(summary.byArea)) {
+      console.log(`  ${area}:`);
+      console.log(`    Found: ${stats.found}, Without Website: ${stats.withoutWebsite}, Saved: ${stats.saved}`);
+    }
+    console.log('');
+
+    // Show database stats
+    const dbStats = db.getStats();
+    console.log('Database Stats:');
+    console.log(`  Total businesses: ${dbStats.totalBusinesses}`);
+    console.log(`  By status:`, dbStats.byStatus);
+    console.log('');
+
+    if (summary.newlySaved > 0) {
+      console.log(`SUCCESS: Discovered ${summary.newlySaved} new businesses without websites!`);
+      console.log('Run "npm run generate" to create websites for them.');
+    } else if (summary.alreadyExists > 0) {
+      console.log('No new businesses found - all discoveries already in database.');
+    } else if (summary.withoutWebsite === 0) {
+      console.log('All businesses found already have websites.');
+    } else {
+      console.log('No businesses found matching criteria.');
+    }
+
   } catch (error) {
     logger.error('Discovery failed:', error);
     process.exit(1);
