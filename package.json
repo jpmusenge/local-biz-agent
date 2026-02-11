@@ -15,7 +15,9 @@
     "pipeline": "tsx scripts/pipeline.ts",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "test:db": "tsx scripts/test-db.ts"
+    "test:db": "tsx scripts/test-db.ts",
+    "preview": "tsx scripts/preview.ts",
+    "test:premium": "tsx scripts/test-premium.ts"
   },
   "keywords": [
     "ai",

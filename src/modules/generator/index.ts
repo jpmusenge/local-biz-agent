@@ -47,9 +47,9 @@ export class GeneratorService {
 
   // Available templates in order of generation
   private static readonly TEMPLATE_ORDER: WebsiteTemplate[] = [
-    WebsiteTemplate.MODERN_MINIMAL,
-    WebsiteTemplate.PROFESSIONAL_CLEAN,
-    WebsiteTemplate.BOLD_COLORFUL,
+    WebsiteTemplate.SUSPENDED_DARK,
+    WebsiteTemplate.SUSPENDED_LIGHT,
+    WebsiteTemplate.SUSPENDED_BOLD,
   ];
 
   constructor(config?: Partial<GeneratorConfig>, client?: ClaudeClient) {

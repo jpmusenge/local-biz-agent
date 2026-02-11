@@ -1,5 +1,5 @@
 // Base Prompt Builder for Claude Website Generation
-// Constructs detailed prompts that guide Claude to create professional websites
+// Constructs premium, Awwwards-quality prompts using Tailwind CSS, Lucide icons, and Google Fonts
 
 import {
   WebsiteTemplate,
@@ -8,17 +8,14 @@ import {
   GeneratorFeature,
   DEFAULT_FEATURES,
 } from '../types.js';
+import { getIndustryData } from './industry/index.js';
 
 /**
- * Build a comprehensive prompt for Claude to generate a website.
+ * Build a comprehensive prompt for Claude to generate a premium website.
  *
  * The prompt instructs Claude to create a complete, single-file HTML website
- * with embedded CSS that is mobile-responsive, modern, and professional.
- *
- * @param business - Business information to include in the website
- * @param template - The visual style template to use
- * @param features - Optional features to include (defaults to DEFAULT_FEATURES)
- * @returns A detailed prompt string for Claude
+ * using Tailwind CSS CDN, Lucide icons, and Google Fonts for a polished,
+ * Awwwards-quality result.
  */
 export function buildWebsitePrompt(
   business: BusinessInfo,
@@ -26,64 +23,120 @@ export function buildWebsitePrompt(
   features: GeneratorFeature[] = DEFAULT_FEATURES
 ): string {
   const templateDescription = TEMPLATE_DESCRIPTIONS[template];
+  const industryData = getIndustryData(business.businessType || business.category);
   const featureInstructions = buildFeatureInstructions(features, business);
   const businessContext = buildBusinessContext(business);
 
-  return `You are an expert web designer creating a professional website for a local business. Generate a complete, production-ready single-file HTML website with embedded CSS.
+  return `You are a world-class web designer creating an Awwwards-quality website for a local business. Generate a complete, production-ready single-file HTML website that looks like it was designed by a premium agency.
+
+## TECH STACK (MANDATORY)
+You MUST use these CDN resources in the <head>:
+
+\`\`\`html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="${industryData.fontPairings.googleFontsUrl}" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+\`\`\`
+
+Include a Tailwind config block:
+\`\`\`html
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: '${industryData.colorPalette.primary}',
+          accent: '${industryData.colorPalette.accent}',
+          surface: '${industryData.colorPalette.surface}',
+        },
+        fontFamily: {
+          heading: ['${industryData.fontPairings.heading}', 'serif'],
+          body: ['${industryData.fontPairings.body}', 'sans-serif'],
+        },
+      },
+    },
+  }
+</script>
+\`\`\`
+
+Initialize Lucide icons at the end of body:
+\`\`\`html
+<script>lucide.createIcons();</script>
+\`\`\`
 
 ## BUSINESS INFORMATION
 ${businessContext}
 
-## DESIGN STYLE: ${template.toUpperCase().replace('_', ' ')}
+## DESIGN STYLE: ${template.toUpperCase().replace(/_/g, ' ')}
 ${templateDescription}
+
+## INDUSTRY CONTENT
+Use this specific content for the website:
+
+**Hero:**
+- Headline: "${industryData.heroHeadline}"
+- Subtext: "${industryData.heroSubtext}"
+
+**Services:**
+${industryData.services.map(s => `- ${s.name} (${s.price}) — ${s.description} [Lucide icon: ${s.icon}]`).join('\n')}
+
+**Testimonials:**
+${industryData.testimonials.map(t => `- "${t.text}" — ${t.author} (${'★'.repeat(t.rating)})`).join('\n')}
+
+**About:** "${industryData.aboutText}"
+
+**CTA Button Text:** "${industryData.ctaText}"
 
 ## REQUIRED SECTIONS
 ${featureInstructions}
 
 ## TECHNICAL REQUIREMENTS
 
-### HTML Structure
-- Use semantic HTML5 elements (header, nav, main, section, footer)
-- Include proper meta tags for SEO and mobile viewport
-- Add descriptive alt text for any image placeholders
-- Use proper heading hierarchy (h1 > h2 > h3)
+### Tailwind Usage
+- Use Tailwind utility classes exclusively — NO custom CSS except for keyframe animations in a <style> tag
+- Use responsive prefixes: sm:, md:, lg: for breakpoints
+- Use hover:, focus:, group-hover: for interactive states
+- Use transition, duration, ease classes for animations
+- Use backdrop-blur, bg-opacity for glass-morphism effects
 
-### CSS Requirements
-- All CSS must be embedded in a <style> tag in the <head>
-- Use CSS custom properties (variables) for colors and fonts
-- Implement a mobile-first responsive design
-- Include smooth scroll behavior
-- Add subtle transitions and hover effects
-- Ensure text is readable (proper contrast ratios)
-- Use flexbox or grid for layouts
+### Lucide Icons
+- Use Lucide icon elements: \`<i data-lucide="icon-name" class="w-6 h-6"></i>\`
+- Available icons: scissors, pen-tool, flame, crown, minus, smile, star, phone, mail, map-pin, clock, menu, x, chevron-right, quote, facebook, instagram, twitter
+- Style icons with Tailwind classes on the <i> element
 
-### Mobile Responsiveness
-- The site MUST work perfectly on mobile devices
-- Use responsive breakpoints (max-width: 768px for tablets, max-width: 480px for phones)
-- Navigation should collapse to a hamburger menu on mobile
-- Touch-friendly button sizes (min 44px tap targets)
-- Readable font sizes on all devices
+### Layout & Structure
+- Use semantic HTML5 (header, nav, main, section, footer)
+- Mobile-first responsive design
+- Smooth scroll: add \`scroll-behavior: smooth\` via inline style on <html>
+- Sticky header with backdrop-blur effect
+- Intersection Observer for scroll-triggered fade-in animations
 
-### Visual Polish
-- Use professional, complementary color scheme
-- Include subtle shadows for depth (box-shadow)
-- Rounded corners on cards and buttons
-- Smooth animations (transform, opacity transitions)
-- Professional typography with proper line-height and letter-spacing
+### Sections to Build
+1. **Hero** — Full viewport height, gradient overlay, business name as large heading, subtext, CTA button, subtle scroll indicator
+2. **About** — Split layout (text + image placeholder div with gradient), story text
+3. **Services** — Animated card grid, each card with Lucide icon, service name, price badge, description, hover lift effect
+4. **Testimonials** — Cards with quote icon, star ratings, author name
+5. **Hours** — Clean table/grid layout with days and times
+6. **Contact** — Two-column: info (phone, email, address with Lucide icons) + styled form (name, phone, email, message, submit button)
+7. **CTA Bar** — Bold call-to-action section before footer
+8. **Footer** — Multi-column with links, contact info, copyright
 
-### Call-to-Action Elements
-- Prominent "Call Now" or "Contact Us" buttons
-- Phone number should be clickable (tel: link)
-- Email should be clickable (mailto: link)
-- Sticky header or floating action button for easy contact
+### Mobile Menu
+- Hamburger icon (Lucide "menu") toggles a slide-down mobile nav
+- Close icon (Lucide "x") to dismiss
+- Use JavaScript for toggle functionality
+
+### Animations
+Add a <style> block with:
+- Fade-in-up keyframe animation for scroll-triggered elements
+- Use Intersection Observer in a <script> block to add animation classes on scroll
 
 ## OUTPUT FORMAT
+Return ONLY the complete HTML code. No explanation, no markdown fences. Start with <!DOCTYPE html> and end with </html>.
 
-Return ONLY the complete HTML code. Do not include any explanation, markdown code fences, or additional text. The response should start with <!DOCTYPE html> and end with </html>.
-
-The website should look professional enough that the business owner would be proud to use it immediately. It should feel like it was custom-designed for their specific business.
-
-Generate the complete HTML website now:`;
+Generate the complete premium HTML website now:`;
 }
 
 /**
@@ -99,19 +152,11 @@ function buildBusinessContext(business: BusinessInfo): string {
   if (business.address) {
     lines.push(`- Address: ${business.address}`);
   }
-
   if (business.phone) {
     lines.push(`- Phone: ${business.phone}`);
   }
-
   if (business.email) {
     lines.push(`- Email: ${business.email}`);
-  }
-
-  // Add industry-specific context
-  const industryContext = getIndustryContext(business.businessType || business.category);
-  if (industryContext) {
-    lines.push(`\n### Industry Context\n${industryContext}`);
   }
 
   return lines.join('\n');
@@ -123,153 +168,82 @@ function buildBusinessContext(business: BusinessInfo): string {
 function buildFeatureInstructions(features: GeneratorFeature[], business: BusinessInfo): string {
   const sections: string[] = [];
 
-  // Always include hero section
   sections.push(`
-### 1. Hero Section (Above the Fold)
-- Large, impactful headline with the business name
-- Brief tagline describing what makes this ${business.businessType || 'business'} special
-- Primary call-to-action button ("Call Now", "Book Appointment", or "Get Quote")
-- Background could use a gradient or placeholder for a hero image
+### Hero Section (Above the Fold)
+- Full viewport height with gradient overlay
+- Large heading with the business name using font-heading
+- Tagline text
+- Primary CTA button with hover animation
+- Subtle down-arrow scroll indicator
 `);
 
   if (features.includes('about_section')) {
     sections.push(`
-### 2. About Section
-- Brief story about the business (use placeholder text that sounds authentic)
+### About Section
+- Two-column layout (text left, image placeholder right)
+- Use the provided about text
 - Emphasize local roots in ${business.city}, ${business.state}
-- Build trust and connection with the community
-- Could include years in business, family-owned, etc.
 `);
   }
 
   if (features.includes('services_list')) {
     sections.push(`
-### 3. Services Section
-- Grid or card layout of services offered
-- Generate 4-6 realistic services for a ${business.businessType || business.category}
-- Each service should have a name, brief description, and optional icon (use emoji or CSS icons)
-- Consider what services customers in ${business.city} would actually need
+### Services Section
+- Card grid using the provided services data
+- Each card: Lucide icon, name, price badge, description
+- Hover: translateY(-4px) with shadow increase
+- Staggered fade-in animation on scroll
 `);
   }
 
   if (features.includes('hours_of_operation')) {
     sections.push(`
-### 4. Hours of Operation
-- Display typical business hours in a clean format
-- Use realistic hours for a ${business.businessType || business.category}
-- Could be integrated into contact section or separate
+### Hours of Operation
+- Clean grid with days and hours
+- Highlight today's hours if possible
+- Hours: Mon-Fri 9AM-7PM, Sat 8AM-5PM, Sun Closed
 `);
   }
 
   if (features.includes('testimonials')) {
     sections.push(`
-### 5. Testimonials Section
-- Include 2-3 realistic customer testimonials
-- Use first names only (e.g., "- Sarah M.")
-- Focus on quality, reliability, and local service
-- Star ratings optional
+### Testimonials Section
+- Use the provided testimonials
+- Quote icon (Lucide "quote") at top of each card
+- Star rating display
+- Author name with subtle styling
 `);
   }
 
   if (features.includes('contact_form')) {
     sections.push(`
-### 6. Contact Section
-- Display phone number prominently (clickable on mobile): ${business.phone || '(555) 123-4567'}
-- Email link if available: ${business.email || 'Use a placeholder email'}
+### Contact Section
+- Two-column: contact info left, form right
+- Phone: ${business.phone || '(555) 123-4567'} (clickable tel: link)
+- Email: ${business.email || 'info@example.com'} (clickable mailto: link)
 - Address: ${business.address || business.city + ', ' + business.state}
-- Simple contact form with: Name, Phone, Email, Message fields
-- Form can use formsubmit.co or just be visual (action="#")
+- Form: name, phone, email, message, submit button (action="#")
+- Each contact item has a Lucide icon (phone, mail, map-pin)
 `);
   }
 
   if (features.includes('call_to_action')) {
     sections.push(`
-### 7. Final Call-to-Action
-- Strong closing CTA before the footer
-- Reinforce the main action (call, visit, book)
-- Could include a special offer or urgency element
+### CTA Section
+- Bold background section before footer
+- Strong heading and CTA button
+- Use the provided CTA text
 `);
   }
 
   sections.push(`
-### 8. Footer
-- Copyright notice with business name
-- Quick links to sections (About, Services, Contact)
-- Social media icon placeholders
-- Repeat phone number for easy access
+### Footer
+- Multi-column: business info, quick links, contact details
+- Copyright with current year
+- Social media icon placeholders (Lucide: facebook, instagram, twitter)
 `);
 
   return sections.join('\n');
-}
-
-/**
- * Get industry-specific context to help Claude generate relevant content
- */
-function getIndustryContext(businessType: string): string {
-  const type = businessType.toLowerCase();
-
-  const contexts: Record<string, string> = {
-    'barber shops': `
-This is a barber shop that likely offers:
-- Haircuts (men's, boys', fades, classic cuts)
-- Beard trims and shaves
-- Hot towel treatments
-- Hair styling
-Emphasize: skilled barbers, relaxed atmosphere, walk-ins welcome, appointments available
-`,
-    'restaurants': `
-This is a restaurant that likely offers:
-- Dine-in and takeout options
-- Local/regional cuisine
-- Family-friendly atmosphere
-Emphasize: quality ingredients, friendly service, local favorite, online ordering
-`,
-    'auto repair': `
-This is an auto repair shop that likely offers:
-- Oil changes and maintenance
-- Brake repair
-- Engine diagnostics
-- Tire services
-Emphasize: honest pricing, certified mechanics, quick turnaround, all makes/models
-`,
-    'salons': `
-This is a salon that likely offers:
-- Haircuts and styling
-- Coloring and highlights
-- Treatments and conditioning
-- Special occasion styling
-Emphasize: skilled stylists, relaxing environment, personalized consultations
-`,
-    'plumber': `
-This is a plumbing service that likely offers:
-- Emergency repairs (24/7)
-- Drain cleaning
-- Water heater service
-- Fixture installation
-Emphasize: fast response, upfront pricing, licensed & insured, satisfaction guaranteed
-`,
-    'electrician': `
-This is an electrical service that likely offers:
-- Electrical repairs
-- Panel upgrades
-- Lighting installation
-- Safety inspections
-Emphasize: licensed & insured, code compliant, safety first, free estimates
-`,
-  };
-
-  // Find matching context or return generic
-  for (const [key, context] of Object.entries(contexts)) {
-    if (type.includes(key) || key.includes(type)) {
-      return context;
-    }
-  }
-
-  return `
-This is a local service business. Generate appropriate services and content
-that would appeal to customers in the local area. Emphasize quality,
-reliability, and community connection.
-`;
 }
 
 /**
@@ -282,7 +256,7 @@ export function buildSectionPrompt(
 ): string {
   return `Generate only the ${sectionType} section HTML for a ${business.businessType} called "${business.name}" in ${business.city}, ${business.state}.
 
-Use this style: ${TEMPLATE_DESCRIPTIONS[template]}
+Use Tailwind CSS utility classes and this style: ${TEMPLATE_DESCRIPTIONS[template]}
 
 Return only the HTML for this section, no full page structure.`;
 }

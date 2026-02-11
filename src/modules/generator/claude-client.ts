@@ -6,6 +6,7 @@ import { config } from '../../config/index.js';
 import { logger } from '../../utils/index.js';
 import { WebsiteTemplate, BusinessInfo, TEMPLATE_LABELS } from './types.js';
 import { buildWebsitePrompt } from './templates/base-prompt.js';
+import { getIndustryData } from './templates/industry/index.js';
 
 /**
  * ClaudeClient - Wrapper for the Anthropic Claude API
@@ -17,7 +18,7 @@ import { buildWebsitePrompt } from './templates/base-prompt.js';
  *
  * MOCK MODE:
  * When ANTHROPIC_API_KEY is not set, the client operates in mock mode.
- * This returns sample HTML websites for testing without API costs.
+ * This returns premium Tailwind-based HTML websites for testing without API costs.
  */
 export class ClaudeClient {
   private client: Anthropic | null = null;
@@ -36,7 +37,7 @@ export class ClaudeClient {
 
     if (this.isMockMode) {
       logger.warn('ANTHROPIC_API_KEY not set - running in MOCK MODE');
-      logger.warn('Mock mode returns sample HTML for testing. Set API key for AI-generated websites.');
+      logger.warn('Mock mode returns premium Tailwind templates for testing. Set API key for AI-generated websites.');
     } else {
       this.client = new Anthropic({
         apiKey: this.apiKey,
@@ -139,697 +140,416 @@ export class ClaudeClient {
   }
 
   /**
-   * Generate a mock website for testing.
-   * Returns a complete, professional-looking HTML website.
+   * Generate a premium mock website using Tailwind CSS, Lucide icons, and Google Fonts.
+   * Returns an Awwwards-quality HTML website for testing.
    */
   private generateMockWebsite(business: BusinessInfo, template: WebsiteTemplate): Promise<string> {
-    logger.info(`[MOCK] Generating sample website for "${business.name}"`);
+    logger.info(`[MOCK] Generating premium ${TEMPLATE_LABELS[template]} website for "${business.name}"`);
 
-    const colors = this.getTemplateColors(template);
-    const services = this.getMockServices(business.businessType || business.category);
+    const industry = getIndustryData(business.businessType || business.category);
+    const colors = this.getTemplateColors(template, industry.colorPalette);
+    const fonts = industry.fontPairings;
+    const phone = business.phone || '(555) 123-4567';
+    const phoneRaw = business.phone?.replace(/\D/g, '') || '5551234567';
+    const email = business.email || 'info@example.com';
+    const address = business.address || `${business.city}, ${business.state}`;
+    const year = new Date().getFullYear();
 
     const html = `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="scroll-behavior: smooth;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="${business.name} - Quality ${business.businessType || business.category} services in ${business.city}, ${business.state}">
+    <meta name="description" content="${business.name} - Premium ${business.businessType || business.category} in ${business.city}, ${business.state}">
     <title>${business.name} | ${business.city}, ${business.state}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="${fonts.googleFontsUrl}" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '${colors.primary}',
+              'primary-light': '${colors.primaryLight}',
+              accent: '${colors.accent}',
+              surface: '${colors.surface}',
+              dark: '${colors.bg}',
+            },
+            fontFamily: {
+              heading: ['${fonts.heading}', 'serif'],
+              body: ['${fonts.body}', 'sans-serif'],
+            },
+          },
+        },
+      }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* CSS Custom Properties */
-        :root {
-            --primary: ${colors.primary};
-            --primary-dark: ${colors.primaryDark};
-            --secondary: ${colors.secondary};
-            --accent: ${colors.accent};
-            --text: ${colors.text};
-            --text-light: ${colors.textLight};
-            --bg: ${colors.bg};
-            --bg-alt: ${colors.bgAlt};
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --radius: 8px;
-            --radius-lg: 16px;
-        }
-
-        /* Reset & Base */
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            line-height: 1.6;
-            color: var(--text);
-            background: var(--bg);
-        }
-
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-
-        a {
-            color: var(--primary);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        a:hover {
-            color: var(--primary-dark);
-        }
-
-        /* Typography */
-        h1, h2, h3, h4, h5, h6 {
-            font-weight: 700;
-            line-height: 1.2;
-            color: var(--text);
-        }
-
-        h1 { font-size: 2.5rem; }
-        h2 { font-size: 2rem; margin-bottom: 1rem; }
-        h3 { font-size: 1.5rem; }
-
-        p {
-            margin-bottom: 1rem;
-            color: var(--text-light);
-        }
-
-        /* Layout */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1.5rem;
-        }
-
-        section {
-            padding: 5rem 0;
-        }
-
-        /* Header */
-        header {
-            background: var(--bg);
-            box-shadow: var(--shadow);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 0;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--primary);
-        }
-
-        nav ul {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
-        }
-
-        nav a {
-            color: var(--text);
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-
-        nav a:hover {
-            color: var(--primary);
-        }
-
-        .nav-toggle {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text);
-        }
-
-        /* Hero Section */
-        .hero {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 10rem 0 6rem;
-            text-align: center;
-        }
-
-        .hero h1 {
-            color: white;
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .hero p {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.25rem;
-            max-width: 600px;
-            margin: 0 auto 2rem;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 1rem 2rem;
-            border-radius: var(--radius);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: none;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: var(--primary);
-            margin-left: 1rem;
-        }
-
-        .btn-secondary:hover {
-            background: var(--bg-alt);
-        }
-
-        /* About Section */
-        .about {
-            background: var(--bg-alt);
-        }
-
-        .about-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-        }
-
-        .about-image {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            height: 400px;
-            border-radius: var(--radius-lg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 4rem;
-        }
-
-        /* Services Section */
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
-        }
-
-        .service-card {
-            background: white;
-            padding: 2rem;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow);
-            transition: transform 0.3s, box-shadow 0.3s;
-            text-align: center;
-        }
-
-        .service-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .service-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .service-card h3 {
-            margin-bottom: 0.5rem;
-        }
-
-        /* Testimonials */
-        .testimonials {
-            background: var(--bg-alt);
-        }
-
-        .testimonials-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
-        }
-
-        .testimonial-card {
-            background: white;
-            padding: 2rem;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow);
-        }
-
-        .testimonial-text {
-            font-style: italic;
-            margin-bottom: 1rem;
-            color: var(--text);
-        }
-
-        .testimonial-author {
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .stars {
-            color: #fbbf24;
-            margin-bottom: 0.5rem;
-        }
-
-        /* Contact Section */
-        .contact {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-        }
-
-        .contact h2, .contact p {
-            color: white;
-        }
-
-        .contact-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            margin-top: 3rem;
-        }
-
-        .contact-info {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .contact-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .contact-icon {
-            font-size: 1.5rem;
-        }
-
-        .contact-item a {
-            color: white;
-            font-size: 1.1rem;
-        }
-
-        .contact-form {
-            background: white;
-            padding: 2rem;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: var(--text);
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid #e5e7eb;
-            border-radius: var(--radius);
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 120px;
-        }
-
-        .contact-form .btn {
-            width: 100%;
-        }
-
-        /* Hours */
-        .hours {
-            margin-top: 2rem;
-        }
-
-        .hours h3 {
-            color: white;
-            margin-bottom: 1rem;
-        }
-
-        .hours-list {
-            list-style: none;
-        }
-
-        .hours-list li {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        /* CTA Section */
-        .cta {
-            text-align: center;
-            background: var(--bg-alt);
-        }
-
-        .cta h2 {
-            margin-bottom: 1rem;
-        }
-
-        .cta p {
-            max-width: 600px;
-            margin: 0 auto 2rem;
-        }
-
-        /* Footer */
-        footer {
-            background: var(--text);
-            color: white;
-            padding: 3rem 0;
-        }
-
-        .footer-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 2rem;
-        }
-
-        .footer-section h4 {
-            color: white;
-            margin-bottom: 1rem;
-        }
-
-        .footer-section ul {
-            list-style: none;
-        }
-
-        .footer-section li {
-            margin-bottom: 0.5rem;
-        }
-
-        .footer-section a {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .footer-section a:hover {
-            color: white;
-        }
-
-        .footer-bottom {
-            text-align: center;
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            h1 { font-size: 2rem; }
-            h2 { font-size: 1.75rem; }
-
-            .nav-toggle {
-                display: block;
-            }
-
-            nav ul {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: white;
-                flex-direction: column;
-                padding: 1rem;
-                gap: 1rem;
-                box-shadow: var(--shadow);
-            }
-
-            nav ul.active {
-                display: flex;
-            }
-
-            .hero {
-                padding: 8rem 0 4rem;
-            }
-
-            .hero h1 {
-                font-size: 2.25rem;
-            }
-
-            .btn-secondary {
-                margin-left: 0;
-                margin-top: 1rem;
-            }
-
-            .about-content,
-            .contact-grid {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
-
-            .about-image {
-                height: 250px;
-            }
-
-            section {
-                padding: 3rem 0;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 1rem;
-            }
-
-            .hero h1 {
-                font-size: 1.875rem;
-            }
-
-            .services-grid,
-            .testimonials-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      .animate-fade-in-up {
+        animation: fadeInUp 0.8s ease forwards;
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.6s ease forwards;
+      }
+      .animate-on-scroll {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.8s ease, transform 0.8s ease;
+      }
+      .animate-on-scroll.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
     </style>
 </head>
-<body>
+<body class="font-body ${colors.bodyClass}">
+
     <!-- Header -->
-    <header>
-        <div class="container header-content">
-            <a href="#" class="logo">${business.name}</a>
-            <button class="nav-toggle" onclick="document.querySelector('nav ul').classList.toggle('active')">
-                ☰
-            </button>
-            <nav>
-                <ul>
-                    <li><a href="#about">About</a></li>
-                    <li><a href="#services">Services</a></li>
-                    <li><a href="#testimonials">Reviews</a></li>
-                    <li><a href="#contact">Contact</a></li>
-                </ul>
-            </nav>
+    <header class="fixed top-0 left-0 right-0 z-50 ${colors.headerBg} backdrop-blur-md border-b ${colors.borderColor}">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16 sm:h-20">
+          <a href="#" class="font-heading text-xl sm:text-2xl font-bold ${colors.logoColor}">
+            ${business.name}
+          </a>
+          <!-- Desktop Nav -->
+          <nav class="hidden md:flex items-center gap-8">
+            <a href="#about" class="${colors.navLink} hover:${colors.navLinkHover} transition-colors duration-300 text-sm uppercase tracking-wider font-medium">About</a>
+            <a href="#services" class="${colors.navLink} hover:${colors.navLinkHover} transition-colors duration-300 text-sm uppercase tracking-wider font-medium">Services</a>
+            <a href="#testimonials" class="${colors.navLink} hover:${colors.navLinkHover} transition-colors duration-300 text-sm uppercase tracking-wider font-medium">Reviews</a>
+            <a href="#contact" class="${colors.navLink} hover:${colors.navLinkHover} transition-colors duration-300 text-sm uppercase tracking-wider font-medium">Contact</a>
+            <a href="tel:${phoneRaw}" class="bg-primary text-${colors.btnText} px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-accent transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+              ${industry.ctaText}
+            </a>
+          </nav>
+          <!-- Mobile Menu Button -->
+          <button id="menu-btn" class="md:hidden ${colors.navLink}" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+          </button>
         </div>
+        <!-- Mobile Nav -->
+        <div id="mobile-menu" class="hidden md:hidden pb-6 border-t ${colors.borderColor} mt-2 pt-4">
+          <div class="flex flex-col gap-4">
+            <a href="#about" class="${colors.navLink} text-sm uppercase tracking-wider font-medium" onclick="document.getElementById('mobile-menu').classList.add('hidden')">About</a>
+            <a href="#services" class="${colors.navLink} text-sm uppercase tracking-wider font-medium" onclick="document.getElementById('mobile-menu').classList.add('hidden')">Services</a>
+            <a href="#testimonials" class="${colors.navLink} text-sm uppercase tracking-wider font-medium" onclick="document.getElementById('mobile-menu').classList.add('hidden')">Reviews</a>
+            <a href="#contact" class="${colors.navLink} text-sm uppercase tracking-wider font-medium" onclick="document.getElementById('mobile-menu').classList.add('hidden')">Contact</a>
+            <a href="tel:${phoneRaw}" class="bg-primary text-${colors.btnText} px-5 py-3 rounded-lg text-sm font-semibold text-center hover:bg-accent transition-colors duration-300">
+              ${industry.ctaText}
+            </a>
+          </div>
+        </div>
+      </div>
     </header>
 
     <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h1>${business.name}</h1>
-            <p>Your trusted ${(business.businessType || business.category).toLowerCase()} in ${business.city}, ${business.state}. Quality service, fair prices, and a commitment to excellence since day one.</p>
-            <a href="tel:${business.phone || '5551234567'}" class="btn btn-primary">Call Now: ${business.phone || '(555) 123-4567'}</a>
-            <a href="#contact" class="btn btn-secondary">Get in Touch</a>
+    <section class="relative min-h-screen flex items-center justify-center ${colors.heroBg} overflow-hidden">
+      <div class="absolute inset-0 ${colors.heroOverlay}"></div>
+      <div class="relative z-10 max-w-4xl mx-auto px-4 text-center">
+        <p class="animate-fade-in text-primary font-medium tracking-[0.2em] uppercase text-sm mb-6">${business.city}, ${business.state}</p>
+        <h1 class="animate-fade-in-up font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold ${colors.heroHeading} leading-tight mb-6">
+          ${industry.heroHeadline}
+        </h1>
+        <p class="animate-fade-in-up ${colors.heroSubtext} text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed" style="animation-delay: 0.2s;">
+          ${industry.heroSubtext}
+        </p>
+        <div class="animate-fade-in-up flex flex-col sm:flex-row gap-4 justify-center" style="animation-delay: 0.4s;">
+          <a href="tel:${phoneRaw}" class="bg-primary text-${colors.btnText} px-8 py-4 rounded-lg text-lg font-semibold hover:bg-accent transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/20">
+            ${industry.ctaText}
+          </a>
+          <a href="#services" class="${colors.secondaryBtn} px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-300 hover:-translate-y-1">
+            View Services
+          </a>
         </div>
+      </div>
+      <!-- Scroll Indicator -->
+      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+        <i data-lucide="chevron-down" class="w-6 h-6 ${colors.heroSubtext}"></i>
+      </div>
     </section>
 
     <!-- About Section -->
-    <section id="about" class="about">
-        <div class="container about-content">
-            <div class="about-text">
-                <h2>About ${business.name}</h2>
-                <p>Welcome to ${business.name}, where we've been proudly serving the ${business.city} community with exceptional ${(business.businessType || business.category).toLowerCase()} services.</p>
-                <p>Our team is dedicated to providing you with the best experience possible. We believe in honest work, fair pricing, and treating every customer like family.</p>
-                <p>Whether you're a first-time customer or a longtime friend, we're here to help with all your needs. Stop by and see why ${business.city} residents choose us time and time again.</p>
+    <section id="about" class="py-20 sm:py-28 ${colors.sectionBg}">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div class="animate-on-scroll">
+            <p class="text-primary font-medium tracking-[0.15em] uppercase text-sm mb-4">Our Story</p>
+            <h2 class="font-heading text-3xl sm:text-4xl font-bold ${colors.heading} mb-6">About ${business.name}</h2>
+            <p class="${colors.bodyText} text-lg leading-relaxed mb-6">
+              ${industry.aboutText}
+            </p>
+            <p class="${colors.mutedText} leading-relaxed">
+              Proudly serving the ${business.city} community. Whether you're a first-time visitor or a long-time regular, we're here to deliver an experience you'll remember.
+            </p>
+          </div>
+          <div class="animate-on-scroll" style="transition-delay: 0.2s;">
+            <div class="relative">
+              <div class="${colors.aboutImage} aspect-[4/3] rounded-2xl flex items-center justify-center">
+                <i data-lucide="scissors" class="w-20 h-20 ${colors.aboutImageIcon}"></i>
+              </div>
+              <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-primary/10 rounded-2xl -z-10"></div>
+              <div class="absolute -top-6 -left-6 w-24 h-24 bg-accent/10 rounded-2xl -z-10"></div>
             </div>
-            <div class="about-image">
-                🏢
-            </div>
+          </div>
         </div>
+      </div>
     </section>
 
     <!-- Services Section -->
-    <section id="services">
-        <div class="container">
-            <h2 style="text-align: center;">Our Services</h2>
-            <p style="text-align: center; max-width: 600px; margin: 0 auto;">We offer a wide range of professional services to meet your needs.</p>
-            <div class="services-grid">
-                ${services.map(s => `
-                <div class="service-card">
-                    <div class="service-icon">${s.icon}</div>
-                    <h3>${s.name}</h3>
-                    <p>${s.description}</p>
-                </div>
-                `).join('')}
-            </div>
+    <section id="services" class="py-20 sm:py-28 ${colors.sectionAltBg}">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16 animate-on-scroll">
+          <p class="text-primary font-medium tracking-[0.15em] uppercase text-sm mb-4">What We Offer</p>
+          <h2 class="font-heading text-3xl sm:text-4xl font-bold ${colors.heading} mb-4">Our Services</h2>
+          <p class="${colors.mutedText} max-w-2xl mx-auto text-lg">Premium services delivered with skill and care. Every visit, every time.</p>
         </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          ${industry.services.map((s, i) => `
+          <div class="animate-on-scroll group ${colors.cardBg} rounded-2xl p-8 ${colors.cardBorder} hover:-translate-y-1 hover:shadow-xl ${colors.cardHoverShadow} transition-all duration-300" style="transition-delay: ${i * 0.1}s;">
+            <div class="w-14 h-14 rounded-xl ${colors.iconBg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+              <i data-lucide="${s.icon}" class="w-6 h-6 text-primary"></i>
+            </div>
+            <div class="flex items-baseline justify-between mb-3">
+              <h3 class="font-heading text-xl font-semibold ${colors.heading}">${s.name}</h3>
+              <span class="text-primary font-bold text-lg">${s.price}</span>
+            </div>
+            <p class="${colors.mutedText} leading-relaxed">${s.description}</p>
+          </div>
+          `).join('')}
+        </div>
+      </div>
     </section>
 
     <!-- Testimonials Section -->
-    <section id="testimonials" class="testimonials">
-        <div class="container">
-            <h2 style="text-align: center;">What Our Customers Say</h2>
-            <div class="testimonials-grid">
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text">"Absolutely fantastic service! Professional, friendly, and they really know what they're doing. Highly recommend to anyone in ${business.city}!"</p>
-                    <p class="testimonial-author">- Sarah M.</p>
-                </div>
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text">"Been coming here for years. Consistent quality and always a great experience. They treat you like family."</p>
-                    <p class="testimonial-author">- Michael R.</p>
-                </div>
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text">"Fair prices and excellent work. What more could you ask for? ${business.name} is the best in town!"</p>
-                    <p class="testimonial-author">- Jennifer L.</p>
-                </div>
-            </div>
+    <section id="testimonials" class="py-20 sm:py-28 ${colors.sectionBg}">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16 animate-on-scroll">
+          <p class="text-primary font-medium tracking-[0.15em] uppercase text-sm mb-4">Testimonials</p>
+          <h2 class="font-heading text-3xl sm:text-4xl font-bold ${colors.heading} mb-4">What Our Clients Say</h2>
         </div>
+        <div class="grid md:grid-cols-3 gap-8">
+          ${industry.testimonials.map((t, i) => `
+          <div class="animate-on-scroll ${colors.cardBg} rounded-2xl p-8 ${colors.cardBorder} relative" style="transition-delay: ${i * 0.15}s;">
+            <i data-lucide="quote" class="w-10 h-10 text-primary/30 mb-4"></i>
+            <div class="flex gap-1 mb-4">
+              ${'<i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>'.repeat(t.rating)}
+            </div>
+            <p class="${colors.bodyText} leading-relaxed mb-6 italic">"${t.text}"</p>
+            <p class="font-semibold ${colors.heading}">- ${t.author}</p>
+          </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- Hours Section -->
+    <section class="py-20 sm:py-28 ${colors.sectionAltBg}">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12 animate-on-scroll">
+          <p class="text-primary font-medium tracking-[0.15em] uppercase text-sm mb-4">Visit Us</p>
+          <h2 class="font-heading text-3xl sm:text-4xl font-bold ${colors.heading} mb-4">Hours of Operation</h2>
+        </div>
+        <div class="animate-on-scroll ${colors.cardBg} rounded-2xl p-8 sm:p-10 ${colors.cardBorder}">
+          <div class="space-y-4">
+            ${[
+              { day: 'Monday', hours: '9:00 AM - 7:00 PM' },
+              { day: 'Tuesday', hours: '9:00 AM - 7:00 PM' },
+              { day: 'Wednesday', hours: '9:00 AM - 7:00 PM' },
+              { day: 'Thursday', hours: '9:00 AM - 7:00 PM' },
+              { day: 'Friday', hours: '9:00 AM - 7:00 PM' },
+              { day: 'Saturday', hours: '8:00 AM - 5:00 PM' },
+              { day: 'Sunday', hours: 'Closed' },
+            ].map(h => `
+            <div class="flex justify-between items-center py-3 border-b ${colors.borderColor} last:border-0">
+              <span class="font-medium ${colors.heading}">${h.day}</span>
+              <span class="${h.hours === 'Closed' ? 'text-red-400' : colors.mutedText}">${h.hours}</span>
+            </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Contact Section -->
-    <section id="contact" class="contact">
-        <div class="container">
-            <h2 style="text-align: center;">Get in Touch</h2>
-            <p style="text-align: center;">We'd love to hear from you. Reach out today!</p>
-            <div class="contact-grid">
-                <div>
-                    <div class="contact-info">
-                        <div class="contact-item">
-                            <span class="contact-icon">📍</span>
-                            <span>${business.address || `${business.city}, ${business.state}`}</span>
-                        </div>
-                        <div class="contact-item">
-                            <span class="contact-icon">📞</span>
-                            <a href="tel:${business.phone || '5551234567'}">${business.phone || '(555) 123-4567'}</a>
-                        </div>
-                        <div class="contact-item">
-                            <span class="contact-icon">✉️</span>
-                            <a href="mailto:${business.email || 'info@example.com'}">${business.email || 'info@example.com'}</a>
-                        </div>
-                    </div>
-                    <div class="hours">
-                        <h3>Hours of Operation</h3>
-                        <ul class="hours-list">
-                            <li><span>Monday - Friday</span><span>9:00 AM - 6:00 PM</span></li>
-                            <li><span>Saturday</span><span>10:00 AM - 4:00 PM</span></li>
-                            <li><span>Sunday</span><span>Closed</span></li>
-                        </ul>
-                    </div>
-                </div>
-                <form class="contact-form" action="#" method="POST">
-                    <div class="form-group">
-                        <label for="name">Your Name</label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">Phone Number</label>
-                        <input type="tel" id="phone" name="phone">
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="message">Message</label>
-                        <textarea id="message" name="message" required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Send Message</button>
-                </form>
-            </div>
+    <section id="contact" class="py-20 sm:py-28 ${colors.sectionBg}">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16 animate-on-scroll">
+          <p class="text-primary font-medium tracking-[0.15em] uppercase text-sm mb-4">Get in Touch</p>
+          <h2 class="font-heading text-3xl sm:text-4xl font-bold ${colors.heading} mb-4">Contact Us</h2>
+          <p class="${colors.mutedText} max-w-2xl mx-auto text-lg">We'd love to hear from you. Reach out today.</p>
         </div>
+        <div class="grid md:grid-cols-2 gap-12 lg:gap-16">
+          <!-- Contact Info -->
+          <div class="animate-on-scroll space-y-8">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 rounded-xl ${colors.iconBg} flex items-center justify-center flex-shrink-0">
+                <i data-lucide="phone" class="w-5 h-5 text-primary"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold ${colors.heading} mb-1">Phone</h3>
+                <a href="tel:${phoneRaw}" class="${colors.mutedText} hover:text-primary transition-colors text-lg">${phone}</a>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 rounded-xl ${colors.iconBg} flex items-center justify-center flex-shrink-0">
+                <i data-lucide="mail" class="w-5 h-5 text-primary"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold ${colors.heading} mb-1">Email</h3>
+                <a href="mailto:${email}" class="${colors.mutedText} hover:text-primary transition-colors text-lg">${email}</a>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 rounded-xl ${colors.iconBg} flex items-center justify-center flex-shrink-0">
+                <i data-lucide="map-pin" class="w-5 h-5 text-primary"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold ${colors.heading} mb-1">Address</h3>
+                <p class="${colors.mutedText} text-lg">${address}</p>
+              </div>
+            </div>
+            <!-- Map Placeholder -->
+            <div class="${colors.mapPlaceholder} rounded-2xl h-48 flex items-center justify-center">
+              <div class="text-center ${colors.mutedText}">
+                <i data-lucide="map-pin" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                <p class="text-sm">Map placeholder</p>
+              </div>
+            </div>
+          </div>
+          <!-- Contact Form -->
+          <div class="animate-on-scroll" style="transition-delay: 0.2s;">
+            <form action="#" method="POST" class="${colors.cardBg} rounded-2xl p-8 ${colors.cardBorder}">
+              <div class="space-y-5">
+                <div>
+                  <label for="name" class="block text-sm font-medium ${colors.heading} mb-2">Your Name</label>
+                  <input type="text" id="name" name="name" required
+                    class="w-full px-4 py-3 rounded-lg ${colors.inputBg} border ${colors.inputBorder} ${colors.inputText} focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-300">
+                </div>
+                <div>
+                  <label for="phone-input" class="block text-sm font-medium ${colors.heading} mb-2">Phone Number</label>
+                  <input type="tel" id="phone-input" name="phone"
+                    class="w-full px-4 py-3 rounded-lg ${colors.inputBg} border ${colors.inputBorder} ${colors.inputText} focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-300">
+                </div>
+                <div>
+                  <label for="email-input" class="block text-sm font-medium ${colors.heading} mb-2">Email Address</label>
+                  <input type="email" id="email-input" name="email" required
+                    class="w-full px-4 py-3 rounded-lg ${colors.inputBg} border ${colors.inputBorder} ${colors.inputText} focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-300">
+                </div>
+                <div>
+                  <label for="message" class="block text-sm font-medium ${colors.heading} mb-2">Message</label>
+                  <textarea id="message" name="message" rows="4" required
+                    class="w-full px-4 py-3 rounded-lg ${colors.inputBg} border ${colors.inputBorder} ${colors.inputText} focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-300 resize-none"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-primary text-${colors.btnText} py-4 rounded-lg font-semibold text-lg hover:bg-accent transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20">
+                  Send Message
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- CTA Section -->
-    <section class="cta">
-        <div class="container">
-            <h2>Ready to Get Started?</h2>
-            <p>Experience the ${business.name} difference today. We're here to help with all your ${(business.businessType || business.category).toLowerCase()} needs.</p>
-            <a href="tel:${business.phone || '5551234567'}" class="btn btn-primary">Call Now: ${business.phone || '(555) 123-4567'}</a>
+    <section class="py-20 sm:py-28 ${colors.ctaBg} relative overflow-hidden">
+      <div class="absolute inset-0 ${colors.ctaOverlay}"></div>
+      <div class="relative z-10 max-w-4xl mx-auto px-4 text-center">
+        <h2 class="animate-on-scroll font-heading text-3xl sm:text-4xl md:text-5xl font-bold ${colors.ctaHeading} mb-6">
+          Ready to Experience the Difference?
+        </h2>
+        <p class="animate-on-scroll ${colors.ctaText} text-lg sm:text-xl max-w-2xl mx-auto mb-10">
+          Join the hundreds of satisfied clients who trust ${business.name}. ${industry.ctaText.replace(/^Book|^Schedule|^Get|^Reserve/, 'Come in and')} see why we're ${business.city}'s favorite.
+        </p>
+        <div class="animate-on-scroll flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="tel:${phoneRaw}" class="bg-primary text-${colors.btnText} px-10 py-4 rounded-lg text-lg font-semibold hover:bg-accent transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/20 inline-flex items-center justify-center gap-2">
+            <i data-lucide="phone" class="w-5 h-5"></i>
+            Call Now: ${phone}
+          </a>
         </div>
+      </div>
     </section>
 
     <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h4>${business.name}</h4>
-                    <p style="color: rgba(255,255,255,0.7);">Quality ${(business.businessType || business.category).toLowerCase()} services in ${business.city}, ${business.state}.</p>
-                </div>
-                <div class="footer-section">
-                    <h4>Quick Links</h4>
-                    <ul>
-                        <li><a href="#about">About Us</a></li>
-                        <li><a href="#services">Services</a></li>
-                        <li><a href="#testimonials">Reviews</a></li>
-                        <li><a href="#contact">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Contact</h4>
-                    <ul>
-                        <li><a href="tel:${business.phone || '5551234567'}">${business.phone || '(555) 123-4567'}</a></li>
-                        <li><a href="mailto:${business.email || 'info@example.com'}">${business.email || 'info@example.com'}</a></li>
-                        <li>${business.city}, ${business.state}</li>
-                    </ul>
-                </div>
+    <footer class="${colors.footerBg} border-t ${colors.borderColor}">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
+          <div class="lg:col-span-2">
+            <a href="#" class="font-heading text-2xl font-bold ${colors.logoColor} mb-4 inline-block">${business.name}</a>
+            <p class="${colors.mutedText} leading-relaxed max-w-md">
+              Premium ${(business.businessType || business.category).toLowerCase()} services in ${business.city}, ${business.state}. Quality, care, and attention to detail in everything we do.
+            </p>
+            <div class="flex gap-4 mt-6">
+              <a href="#" class="w-10 h-10 rounded-lg ${colors.iconBg} flex items-center justify-center hover:bg-primary/20 transition-colors">
+                <i data-lucide="facebook" class="w-4 h-4 text-primary"></i>
+              </a>
+              <a href="#" class="w-10 h-10 rounded-lg ${colors.iconBg} flex items-center justify-center hover:bg-primary/20 transition-colors">
+                <i data-lucide="instagram" class="w-4 h-4 text-primary"></i>
+              </a>
+              <a href="#" class="w-10 h-10 rounded-lg ${colors.iconBg} flex items-center justify-center hover:bg-primary/20 transition-colors">
+                <i data-lucide="twitter" class="w-4 h-4 text-primary"></i>
+              </a>
             </div>
-            <div class="footer-bottom">
-                <p>&copy; ${new Date().getFullYear()} ${business.name}. All rights reserved.</p>
-            </div>
+          </div>
+          <div>
+            <h4 class="font-heading font-semibold ${colors.heading} mb-4">Quick Links</h4>
+            <ul class="space-y-3">
+              <li><a href="#about" class="${colors.mutedText} hover:text-primary transition-colors">About</a></li>
+              <li><a href="#services" class="${colors.mutedText} hover:text-primary transition-colors">Services</a></li>
+              <li><a href="#testimonials" class="${colors.mutedText} hover:text-primary transition-colors">Reviews</a></li>
+              <li><a href="#contact" class="${colors.mutedText} hover:text-primary transition-colors">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-heading font-semibold ${colors.heading} mb-4">Contact</h4>
+            <ul class="space-y-3">
+              <li><a href="tel:${phoneRaw}" class="${colors.mutedText} hover:text-primary transition-colors">${phone}</a></li>
+              <li><a href="mailto:${email}" class="${colors.mutedText} hover:text-primary transition-colors">${email}</a></li>
+              <li><span class="${colors.mutedText}">${address}</span></li>
+            </ul>
+          </div>
         </div>
+        <div class="border-t ${colors.borderColor} mt-12 pt-8 text-center">
+          <p class="${colors.mutedText} text-sm">&copy; ${year} ${business.name}. All rights reserved.</p>
+        </div>
+      </div>
     </footer>
+
+    <!-- Scripts -->
+    <script>
+      // Initialize Lucide icons
+      lucide.createIcons();
+
+      // Intersection Observer for scroll animations
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+      document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+
+      // Sticky header background on scroll
+      const header = document.querySelector('header');
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+          header.classList.add('shadow-lg');
+        } else {
+          header.classList.remove('shadow-lg');
+        }
+      });
+    </script>
 </body>
 </html>`;
 
@@ -837,94 +557,137 @@ export class ClaudeClient {
   }
 
   /**
-   * Get color scheme based on template
+   * Get color classes based on template style.
+   * Returns Tailwind class strings for each template variation.
    */
-  private getTemplateColors(template: WebsiteTemplate): Record<string, string> {
-    const schemes: Record<WebsiteTemplate, Record<string, string>> = {
-      [WebsiteTemplate.MODERN_MINIMAL]: {
-        primary: '#2563eb',
-        primaryDark: '#1d4ed8',
-        secondary: '#3b82f6',
-        accent: '#f59e0b',
-        text: '#1f2937',
-        textLight: '#6b7280',
-        bg: '#ffffff',
-        bgAlt: '#f9fafb',
-      },
-      [WebsiteTemplate.BOLD_COLORFUL]: {
-        primary: '#7c3aed',
-        primaryDark: '#6d28d9',
-        secondary: '#ec4899',
-        accent: '#10b981',
-        text: '#1f2937',
-        textLight: '#6b7280',
-        bg: '#ffffff',
-        bgAlt: '#faf5ff',
-      },
-      [WebsiteTemplate.PROFESSIONAL_CLEAN]: {
-        primary: '#1e3a5f',
-        primaryDark: '#152a45',
-        secondary: '#2d5a87',
-        accent: '#c9a227',
-        text: '#1f2937',
-        textLight: '#6b7280',
-        bg: '#ffffff',
-        bgAlt: '#f8fafc',
-      },
+  private getTemplateColors(
+    template: WebsiteTemplate,
+    palette: { primary: string; accent: string; background: string; surface: string; text: string; textMuted: string }
+  ): Record<string, string> {
+    const base = {
+      primary: palette.primary,
+      accent: palette.accent,
+      surface: palette.surface,
     };
 
-    return schemes[template];
-  }
-
-  /**
-   * Get mock services based on business type
-   */
-  private getMockServices(businessType: string): Array<{ name: string; icon: string; description: string }> {
-    const type = businessType.toLowerCase();
-
-    if (type.includes('barber')) {
-      return [
-        { name: 'Classic Haircut', icon: '✂️', description: 'Traditional cuts with modern precision' },
-        { name: 'Beard Trim', icon: '🧔', description: 'Shape and style your beard perfectly' },
-        { name: 'Hot Towel Shave', icon: '🪒', description: 'Relaxing traditional straight razor shave' },
-        { name: 'Kids Cuts', icon: '👦', description: 'Patient, friendly service for the little ones' },
-      ];
+    if (template === WebsiteTemplate.SUSPENDED_DARK) {
+      return {
+        ...base,
+        primaryLight: palette.accent,
+        bg: palette.background,
+        bodyClass: 'bg-[#0a0a0a] text-gray-100',
+        headerBg: 'bg-[#0a0a0a]/90',
+        borderColor: 'border-white/10',
+        logoColor: 'text-primary',
+        navLink: 'text-gray-300',
+        navLinkHover: 'text-primary',
+        btnText: 'black',
+        heroBg: 'bg-gradient-to-br from-[#0a0a0a] via-[#1a1a1a] to-[#0a0a0a]',
+        heroOverlay: 'bg-gradient-to-t from-[#0a0a0a] via-transparent to-[#0a0a0a]/50',
+        heroHeading: 'text-white',
+        heroSubtext: 'text-gray-400',
+        secondaryBtn: 'border border-white/20 text-white hover:bg-white/10',
+        sectionBg: 'bg-[#0a0a0a]',
+        sectionAltBg: 'bg-[#111111]',
+        heading: 'text-white',
+        bodyText: 'text-gray-300',
+        mutedText: 'text-gray-500',
+        cardBg: 'bg-[#1a1a1a]',
+        cardBorder: 'border border-white/5',
+        cardHoverShadow: 'hover:shadow-primary/5',
+        iconBg: 'bg-primary/10',
+        aboutImage: 'bg-gradient-to-br from-primary/20 to-accent/10',
+        aboutImageIcon: 'text-primary/50',
+        inputBg: 'bg-[#111111]',
+        inputBorder: 'border-white/10',
+        inputText: 'text-white placeholder:text-gray-600',
+        mapPlaceholder: 'bg-[#1a1a1a] border border-white/5',
+        ctaBg: 'bg-gradient-to-br from-primary/10 via-[#0a0a0a] to-accent/10',
+        ctaOverlay: '',
+        ctaHeading: 'text-white',
+        ctaText: 'text-gray-400',
+        footerBg: 'bg-[#050505]',
+      };
     }
 
-    if (type.includes('restaurant')) {
-      return [
-        { name: 'Dine-In', icon: '🍽️', description: 'Enjoy our warm, welcoming atmosphere' },
-        { name: 'Takeout', icon: '📦', description: 'Fresh food ready when you are' },
-        { name: 'Catering', icon: '🎉', description: 'Perfect for events and gatherings' },
-        { name: 'Daily Specials', icon: '⭐', description: 'Fresh dishes prepared daily' },
-      ];
+    if (template === WebsiteTemplate.SUSPENDED_LIGHT) {
+      return {
+        ...base,
+        primaryLight: palette.accent,
+        bg: palette.background,
+        bodyClass: 'bg-[#faf8f5] text-gray-900',
+        headerBg: 'bg-white/90',
+        borderColor: 'border-gray-200',
+        logoColor: 'text-gray-900',
+        navLink: 'text-gray-600',
+        navLinkHover: 'text-gray-900',
+        btnText: 'white',
+        heroBg: 'bg-gradient-to-br from-[#faf8f5] via-white to-[#f5f0eb]',
+        heroOverlay: '',
+        heroHeading: 'text-gray-900',
+        heroSubtext: 'text-gray-500',
+        secondaryBtn: 'border border-gray-300 text-gray-700 hover:bg-gray-100',
+        sectionBg: 'bg-white',
+        sectionAltBg: 'bg-[#faf8f5]',
+        heading: 'text-gray-900',
+        bodyText: 'text-gray-700',
+        mutedText: 'text-gray-500',
+        cardBg: 'bg-white',
+        cardBorder: 'border border-gray-100',
+        cardHoverShadow: 'hover:shadow-gray-200/50',
+        iconBg: 'bg-primary/10',
+        aboutImage: 'bg-gradient-to-br from-gray-100 to-gray-200',
+        aboutImageIcon: 'text-gray-400',
+        inputBg: 'bg-gray-50',
+        inputBorder: 'border-gray-200',
+        inputText: 'text-gray-900 placeholder:text-gray-400',
+        mapPlaceholder: 'bg-gray-100 border border-gray-200',
+        ctaBg: 'bg-gray-900',
+        ctaOverlay: '',
+        ctaHeading: 'text-white',
+        ctaText: 'text-gray-400',
+        footerBg: 'bg-gray-50',
+      };
     }
 
-    if (type.includes('auto') || type.includes('repair')) {
-      return [
-        { name: 'Oil Change', icon: '🛢️', description: 'Quick, affordable oil changes' },
-        { name: 'Brake Service', icon: '🛑', description: 'Keep your family safe on the road' },
-        { name: 'Engine Diagnostics', icon: '🔧', description: 'Find and fix the problem fast' },
-        { name: 'Tire Service', icon: '🚗', description: 'Rotation, alignment, and more' },
-      ];
-    }
-
-    if (type.includes('salon')) {
-      return [
-        { name: 'Haircuts & Styling', icon: '💇', description: 'Precision cuts for any style' },
-        { name: 'Color Services', icon: '🎨', description: 'Vibrant, long-lasting color' },
-        { name: 'Treatments', icon: '✨', description: 'Deep conditioning and repair' },
-        { name: 'Special Occasions', icon: '👰', description: 'Look perfect for your big day' },
-      ];
-    }
-
-    // Default services
-    return [
-      { name: 'Consultation', icon: '💬', description: 'Free estimates and expert advice' },
-      { name: 'Quality Service', icon: '⭐', description: 'Professional work, every time' },
-      { name: 'Fast Turnaround', icon: '⚡', description: 'Quick service without compromise' },
-      { name: 'Satisfaction Guaranteed', icon: '✅', description: 'Your happiness is our priority' },
-    ];
+    // SUSPENDED_BOLD
+    return {
+      ...base,
+      primaryLight: palette.accent,
+      bg: palette.background,
+      bodyClass: 'bg-[#0f172a] text-gray-100',
+      headerBg: 'bg-[#0f172a]/90',
+      borderColor: 'border-white/10',
+      logoColor: 'text-white',
+      navLink: 'text-gray-300',
+      navLinkHover: 'text-primary',
+      btnText: 'white',
+      heroBg: 'bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a]',
+      heroOverlay: 'bg-gradient-to-t from-[#0f172a] via-transparent to-[#0f172a]/50',
+      heroHeading: 'text-white',
+      heroSubtext: 'text-gray-400',
+      secondaryBtn: 'border-2 border-primary text-primary hover:bg-primary hover:text-white',
+      sectionBg: 'bg-[#0f172a]',
+      sectionAltBg: 'bg-[#1e293b]',
+      heading: 'text-white',
+      bodyText: 'text-gray-300',
+      mutedText: 'text-gray-500',
+      cardBg: 'bg-[#1e293b]',
+      cardBorder: 'border border-white/5',
+      cardHoverShadow: 'hover:shadow-primary/10',
+      iconBg: 'bg-primary/10',
+      aboutImage: 'bg-gradient-to-br from-primary/20 to-accent/20',
+      aboutImageIcon: 'text-primary/50',
+      inputBg: 'bg-[#0f172a]',
+      inputBorder: 'border-white/10',
+      inputText: 'text-white placeholder:text-gray-600',
+      mapPlaceholder: 'bg-[#1e293b] border border-white/5',
+      ctaBg: 'bg-gradient-to-r from-primary to-accent',
+      ctaOverlay: '',
+      ctaHeading: 'text-white',
+      ctaText: 'text-white/80',
+      footerBg: 'bg-[#0a0f1e]',
+    };
   }
 }
 
