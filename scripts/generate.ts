@@ -4,9 +4,11 @@
  * Generate AI-powered websites for businesses without websites
  *
  * Usage:
- *   npm run generate                    # Generate for discovered businesses
- *   npm run generate -- --limit=5       # Limit number of businesses
- *   npm run generate -- --templates=1   # Generate only 1 template per business
+ *   npm run generate                             # Generate with Claude (default)
+ *   npm run generate -- --limit=5               # Limit number of businesses
+ *   npm run generate -- --templates=1           # Generate only 1 template per business
+ *   npm run generate -- --provider=gemini       # Use Gemini instead of Claude
+ *   npm run generate -- --provider=gemini --limit=3  # Gemini, 3 businesses
  *
  * Prerequisites:
  *   - Run "npm run discover" first to populate the database
@@ -14,7 +16,7 @@
  */
 
 import 'dotenv/config';
-import { GeneratorService, TEMPLATE_LABELS, WebsiteTemplate } from '../src/modules/generator/index.js';
+import { GeneratorService, TEMPLATE_LABELS, WebsiteTemplate, AIProvider } from '../src/modules/generator/index.js';
 import { db } from '../src/database/index.js';
 import { logger } from '../src/utils/index.js';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
@@ -30,12 +32,20 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const limitArg = args.find((arg) => arg.startsWith('--limit='));
   const templatesArg = args.find((arg) => arg.startsWith('--templates='));
+  const providerArg = args.find((arg) => arg.startsWith('--provider='));
   const saveArg = args.includes('--save-html');
 
   const limit = limitArg ? parseInt(limitArg.split('=')[1] ?? '1', 10) : 1;
   const templatesPerBusiness = templatesArg ? parseInt(templatesArg.split('=')[1] ?? '2', 10) : 2;
+  const provider = (providerArg?.split('=')[1] ?? 'claude') as AIProvider;
+
+  if (provider !== 'claude' && provider !== 'gemini') {
+    logger.error(`Invalid provider "${provider}". Use --provider=claude or --provider=gemini`);
+    process.exit(1);
+  }
 
   logger.info(`Configuration:`);
+  logger.info(`  AI Provider: ${provider}`);
   logger.info(`  Max businesses to process: ${limit}`);
   logger.info(`  Templates per business: ${templatesPerBusiness}`);
   logger.info(`  Save HTML files: ${saveArg ? 'Yes' : 'No'}`);
@@ -48,6 +58,7 @@ async function main(): Promise<void> {
     // Create generator service
     const generator = new GeneratorService({
       templatesPerBusiness,
+      provider,
       includeFeatures: [
         'contact_form',
         'about_section',

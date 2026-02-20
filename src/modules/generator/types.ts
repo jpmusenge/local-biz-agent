@@ -115,6 +115,11 @@ export interface GeneratedWebsite {
 }
 
 /**
+ * AI provider to use for website generation
+ */
+export type AIProvider = 'claude' | 'gemini';
+
+/**
  * Configuration for the generator service
  */
 export interface GeneratorConfig {
@@ -126,6 +131,9 @@ export interface GeneratorConfig {
 
   /** Which templates to use (defaults to all) */
   templates?: WebsiteTemplate[];
+
+  /** Which AI provider to use for generation (default: claude) */
+  provider?: AIProvider;
 }
 
 /**

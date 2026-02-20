@@ -5,6 +5,7 @@ import { db } from '../../database/index.js';
 import type { Business } from '../../database/types.js';
 import { logger } from '../../utils/index.js';
 import { ClaudeClient, claudeClient } from './claude-client.js';
+import { GeminiClient, geminiClient } from './gemini-client.js';
 import {
   WebsiteTemplate,
   GeneratorConfig,
@@ -16,9 +17,10 @@ import {
   TEMPLATE_LABELS,
 } from './types.js';
 
-// Re-export types and client
+// Re-export types and clients
 export * from './types.js';
 export { ClaudeClient, claudeClient } from './claude-client.js';
+export { GeminiClient, geminiClient } from './gemini-client.js';
 export { buildWebsitePrompt } from './templates/base-prompt.js';
 
 /**
@@ -43,7 +45,7 @@ export { buildWebsitePrompt } from './templates/base-prompt.js';
  */
 export class GeneratorService {
   private config: GeneratorConfig;
-  private client: ClaudeClient;
+  private client: ClaudeClient | GeminiClient;
 
   // Available templates in order of generation
   private static readonly TEMPLATE_ORDER: WebsiteTemplate[] = [
@@ -52,13 +54,23 @@ export class GeneratorService {
     WebsiteTemplate.SUSPENDED_BOLD,
   ];
 
-  constructor(config?: Partial<GeneratorConfig>, client?: ClaudeClient) {
+  constructor(config?: Partial<GeneratorConfig>, client?: ClaudeClient | GeminiClient) {
     this.config = {
       templatesPerBusiness: config?.templatesPerBusiness ?? 2,
       includeFeatures: config?.includeFeatures ?? DEFAULT_FEATURES,
       templates: config?.templates,
+      provider: config?.provider ?? 'claude',
     };
-    this.client = client ?? claudeClient;
+
+    if (client) {
+      this.client = client;
+    } else if (this.config.provider === 'gemini') {
+      this.client = geminiClient;
+      logger.info('Using Gemini as AI provider');
+    } else {
+      this.client = claudeClient;
+      logger.info('Using Claude as AI provider');
+    }
   }
 
   /**
