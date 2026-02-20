@@ -310,6 +310,7 @@ export class GooglePlacesClient {
         return response.data.results[0].geometry.location;
       }
 
+      logger.error(`Geocoding API returned status: ${response.data.status} for "${city}, ${state}"`);
       return null;
     } catch (error) {
       logger.error(`Geocoding failed for ${city}, ${state}:`, error);

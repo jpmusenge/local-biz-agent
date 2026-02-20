@@ -26,10 +26,10 @@ export class ClaudeClient {
   private isMockMode: boolean;
 
   // Model to use for generation
-  private static readonly MODEL = 'claude-sonnet-4-20250514';
+  private static readonly MODEL = 'claude-sonnet-4-6';
 
-  // Max tokens for website generation (websites can be large)
-  private static readonly MAX_TOKENS = 8000;
+  // Max tokens for website generation — full HTML sites can exceed 8k tokens
+  private static readonly MAX_TOKENS = 16000;
 
   constructor() {
     this.apiKey = config.get('ANTHROPIC_API_KEY') ?? null;
