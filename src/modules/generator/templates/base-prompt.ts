@@ -8,7 +8,8 @@ import {
   GeneratorFeature,
   DEFAULT_FEATURES,
 } from '../types.js';
-import { getIndustryData } from './industry/index.js';
+import { getIndustryData, detectIndustryCategory } from './industry/index.js';
+import { buildRestaurantPremiumPrompt } from './restaurant-premium.js';
 
 /**
  * Build a comprehensive prompt for Claude to generate a premium website.
@@ -22,6 +23,12 @@ export function buildWebsitePrompt(
   template: WebsiteTemplate,
   features: GeneratorFeature[] = DEFAULT_FEATURES
 ): string {
+  // Route restaurant businesses to the premium prompt — ignore template variation
+  const industryCategory = detectIndustryCategory(business.businessType || business.category);
+  if (industryCategory === 'restaurant') {
+    return buildRestaurantPremiumPrompt(business);
+  }
+
   const templateDescription = TEMPLATE_DESCRIPTIONS[template];
   const industryData = getIndustryData(business.businessType || business.category);
   const featureInstructions = buildFeatureInstructions(features, business);

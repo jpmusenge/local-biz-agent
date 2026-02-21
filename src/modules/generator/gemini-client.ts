@@ -6,6 +6,7 @@ import { config } from '../../config/index.js';
 import { logger } from '../../utils/index.js';
 import { WebsiteTemplate, BusinessInfo, TEMPLATE_LABELS } from './types.js';
 import { buildWebsitePrompt } from './templates/base-prompt.js';
+import { checkWebsiteQuality } from './templates/restaurant-premium.js';
 
 /**
  * GeminiClient - Wrapper for the Google Gemini API
@@ -84,6 +85,23 @@ export class GeminiClient {
 
       const html = this.cleanHtmlResponse(text);
       logger.info(`[Gemini] Successfully generated ${templateLabel} website (${html.length} chars)`);
+
+      // Run quality check and log results
+      const quality = checkWebsiteQuality(html);
+      if (!quality.passed) {
+        logger.warn(`[Gemini] Quality check FAILED for "${business.name}" (${quality.issues.length} issue(s)):`);
+        for (const issue of quality.issues) {
+          logger.warn(`  ✗ ${issue}`);
+        }
+      }
+      if (quality.warnings.length > 0) {
+        for (const warning of quality.warnings) {
+          logger.warn(`  ⚠ ${warning}`);
+        }
+      }
+      if (quality.passed && quality.warnings.length === 0) {
+        logger.info(`[Gemini] Quality check PASSED for "${business.name}"`);
+      }
 
       return html;
     } catch (error) {

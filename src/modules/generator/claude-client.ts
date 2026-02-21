@@ -7,6 +7,7 @@ import { logger } from '../../utils/index.js';
 import { WebsiteTemplate, BusinessInfo, TEMPLATE_LABELS } from './types.js';
 import { buildWebsitePrompt } from './templates/base-prompt.js';
 import { getIndustryData } from './templates/industry/index.js';
+import { checkWebsiteQuality } from './templates/restaurant-premium.js';
 
 /**
  * ClaudeClient - Wrapper for the Anthropic Claude API
@@ -89,6 +90,23 @@ export class ClaudeClient {
 
       const html = this.cleanHtmlResponse(content.text);
       logger.info(`Successfully generated ${templateLabel} website (${html.length} chars)`);
+
+      // Run quality check and log results
+      const quality = checkWebsiteQuality(html);
+      if (!quality.passed) {
+        logger.warn(`Quality check FAILED for "${business.name}" (${quality.issues.length} issue(s)):`);
+        for (const issue of quality.issues) {
+          logger.warn(`  ✗ ${issue}`);
+        }
+      }
+      if (quality.warnings.length > 0) {
+        for (const warning of quality.warnings) {
+          logger.warn(`  ⚠ ${warning}`);
+        }
+      }
+      if (quality.passed && quality.warnings.length === 0) {
+        logger.info(`Quality check PASSED for "${business.name}"`);
+      }
 
       return html;
     } catch (error) {
