@@ -4,12 +4,16 @@
  * Orchestrates the complete agent workflow: Discovery -> Generation -> Deployment
  *
  * Usage:
- *   npm run pipeline                    # Run full pipeline (default 5 businesses per step)
- *   npm run pipeline -- --limit=10      # Process up to 10 businesses per step
- *   npm run pipeline -- --discover-only # Just run discovery
- *   npm run pipeline -- --generate-only # Just run generation
- *   npm run pipeline -- --deploy-only   # Just run deployment
- *   npm run pipeline -- --dry-run       # Show what would happen without changes
+ *   npm run pipeline                                           # Full pipeline (default 5 per step)
+ *   npm run pipeline -- --limit=10                            # Up to 10 businesses per step
+ *   npm run pipeline -- --category=restaurant                 # Discover restaurants only
+ *   npm run pipeline -- --category=restaurant,salon           # Multiple categories
+ *   npm run pipeline -- --city="Holly Springs, MS"            # One city only
+ *   npm run pipeline -- --category=restaurant --limit=10      # Combined
+ *   npm run pipeline -- --discover-only                       # Just run discovery
+ *   npm run pipeline -- --generate-only                       # Just run generation
+ *   npm run pipeline -- --deploy-only                         # Just run deployment
+ *   npm run pipeline -- --dry-run                             # Show what would happen
  */
 
 import 'dotenv/config';
@@ -41,6 +45,8 @@ interface PipelineConfig {
   generateOnly: boolean;
   deployOnly: boolean;
   dryRun: boolean;
+  categories?: BusinessCategory[];
+  city?: string;
 }
 
 interface PipelineResults {
@@ -63,7 +69,9 @@ interface StepResult<T> {
 // Default discovery configuration - customize these for your target markets
 const DEFAULT_AREAS: SearchArea[] = [
   { city: 'Holly Springs', state: 'MS', radiusMiles: 15 },
-  { city: 'Oxford', state: 'MS', radiusMiles: 10 },
+  { city: 'Oxford',        state: 'MS', radiusMiles: 10 },
+  { city: 'Tupelo',        state: 'MS', radiusMiles: 15 },
+  { city: 'Southaven',     state: 'MS', radiusMiles: 10 },
 ];
 
 const DEFAULT_CATEGORIES: BusinessCategory[] = [
@@ -72,6 +80,25 @@ const DEFAULT_CATEGORIES: BusinessCategory[] = [
   BusinessCategory.AUTO_REPAIR,
   BusinessCategory.SALON,
 ];
+
+/** Maps user-friendly CLI strings to BusinessCategory enum values */
+const CATEGORY_ALIASES: Record<string, BusinessCategory> = {
+  restaurant: BusinessCategory.RESTAURANT, restaurants: BusinessCategory.RESTAURANT, food: BusinessCategory.RESTAURANT,
+  barber: BusinessCategory.BARBER_SHOP, barbers: BusinessCategory.BARBER_SHOP, barber_shop: BusinessCategory.BARBER_SHOP, barbershop: BusinessCategory.BARBER_SHOP,
+  auto: BusinessCategory.AUTO_REPAIR, auto_repair: BusinessCategory.AUTO_REPAIR, car_repair: BusinessCategory.AUTO_REPAIR, mechanic: BusinessCategory.AUTO_REPAIR,
+  salon: BusinessCategory.SALON, salons: BusinessCategory.SALON, beauty: BusinessCategory.SALON, beauty_salon: BusinessCategory.SALON,
+  gym: BusinessCategory.GYM, gyms: BusinessCategory.GYM, fitness: BusinessCategory.GYM,
+  retail: BusinessCategory.RETAIL, store: BusinessCategory.RETAIL, shop: BusinessCategory.RETAIL,
+  plumber: BusinessCategory.PLUMBER, plumbers: BusinessCategory.PLUMBER, plumbing: BusinessCategory.PLUMBER,
+  electrician: BusinessCategory.ELECTRICIAN, electricians: BusinessCategory.ELECTRICIAN, electric: BusinessCategory.ELECTRICIAN,
+  landscaping: BusinessCategory.LANDSCAPING, landscaper: BusinessCategory.LANDSCAPING, lawn: BusinessCategory.LANDSCAPING,
+  cleaning: BusinessCategory.CLEANING_SERVICE, cleaning_service: BusinessCategory.CLEANING_SERVICE, cleaner: BusinessCategory.CLEANING_SERVICE,
+};
+
+function resolveCategory(input: string): BusinessCategory | null {
+  const normalized = input.trim().toLowerCase().replace(/[\s-]/g, '_');
+  return CATEGORY_ALIASES[normalized] ?? null;
+}
 
 // ==================== PIPELINE STEPS ====================
 
@@ -86,19 +113,34 @@ async function runDiscovery(
   logger.info('[STEP 1/3] DISCOVERY');
   logger.info('='.repeat(60));
 
+  // Resolve areas from --city flag, or use all defaults
+  const areas: SearchArea[] = config.city
+    ? (() => {
+        const parts = config.city.split(',').map(s => s.trim());
+        const city = parts[0] ?? config.city;
+        const state = parts[1] ?? 'MS';
+        const known = DEFAULT_AREAS.find(
+          a => a.city.toLowerCase() === city.toLowerCase() && a.state.toLowerCase() === state.toLowerCase()
+        );
+        return [{ city, state, radiusMiles: known?.radiusMiles ?? 10 }];
+      })()
+    : DEFAULT_AREAS;
+
+  const categories = config.categories ?? DEFAULT_CATEGORIES;
+
   if (config.dryRun) {
     logger.info('[DRY RUN] Would search for businesses in:');
-    for (const area of DEFAULT_AREAS) {
+    for (const area of areas) {
       logger.info(`  - ${area.city}, ${area.state} (${area.radiusMiles} mile radius)`);
     }
-    logger.info('Categories:', DEFAULT_CATEGORIES.join(', '));
+    logger.info('Categories:', categories.join(', '));
     return { success: true };
   }
 
   try {
     const discovery = new DiscoveryService({
-      areas: DEFAULT_AREAS,
-      categories: DEFAULT_CATEGORIES,
+      areas,
+      categories,
       maxResultsPerSearch: config.limit,
     });
 
@@ -376,12 +418,39 @@ function parseArgs(): PipelineConfig {
   const limitArg = args.find(arg => arg.startsWith('--limit='));
   const limit = limitArg ? parseInt(limitArg.split('=')[1] ?? '5', 10) : 5;
 
+  // --category=restaurant or --category=restaurant,salon
+  const categoryArg = args.find(arg => arg.startsWith('--category='));
+  let categories: BusinessCategory[] | undefined;
+  if (categoryArg) {
+    const raw = categoryArg.split('=')[1] ?? '';
+    const inputs = raw.split(',').map(s => s.trim()).filter(Boolean);
+    const resolved: BusinessCategory[] = [];
+    for (const input of inputs) {
+      const cat = resolveCategory(input);
+      if (cat) {
+        if (!resolved.includes(cat)) resolved.push(cat);
+      } else {
+        logger.error(`Unknown category: "${input}". Run "npm run discover -- --list-categories" to see options.`);
+        process.exit(1);
+      }
+    }
+    categories = resolved;
+  }
+
+  // --city="Holly Springs, MS"
+  const cityArg = args.find(arg => arg.startsWith('--city='));
+  const city = cityArg
+    ? (cityArg.split('=')[1] ?? '').replace(/^["']|["']$/g, '').trim()
+    : undefined;
+
   return {
     limit,
     discoverOnly: args.includes('--discover-only'),
     generateOnly: args.includes('--generate-only'),
     deployOnly: args.includes('--deploy-only'),
     dryRun: args.includes('--dry-run'),
+    categories,
+    city,
   };
 }
 
