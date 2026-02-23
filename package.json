@@ -22,7 +22,8 @@
     "test:db": "tsx scripts/test-db.ts",
     "preview": "tsx scripts/preview.ts",
     "test:premium": "tsx scripts/test-premium.ts",
-    "test:restaurant-premium": "tsx scripts/test-restaurant-premium.ts"
+    "test:restaurant-premium": "tsx scripts/test-restaurant-premium.ts",
+    "test:barber-premium": "tsx scripts/test-barber-premium.ts"
   },
   "keywords": [
     "ai",

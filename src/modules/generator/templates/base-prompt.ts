@@ -10,6 +10,7 @@ import {
 } from '../types.js';
 import { getIndustryData, detectIndustryCategory } from './industry/index.js';
 import { buildRestaurantPremiumPrompt } from './restaurant-premium.js';
+import { buildBarberPremiumPrompt } from './barber-premium.js';
 
 /**
  * Build a comprehensive prompt for Claude to generate a premium website.
@@ -23,10 +24,13 @@ export function buildWebsitePrompt(
   template: WebsiteTemplate,
   features: GeneratorFeature[] = DEFAULT_FEATURES
 ): string {
-  // Route restaurant businesses to the premium prompt — ignore template variation
+  // Route to industry-specific premium prompts — ignore template variation
   const industryCategory = detectIndustryCategory(business.businessType || business.category);
   if (industryCategory === 'restaurant') {
     return buildRestaurantPremiumPrompt(business);
+  }
+  if (industryCategory === 'barber_shop') {
+    return buildBarberPremiumPrompt(business);
   }
 
   const templateDescription = TEMPLATE_DESCRIPTIONS[template];
