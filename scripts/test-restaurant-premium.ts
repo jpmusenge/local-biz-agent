@@ -167,7 +167,7 @@ async function main(): Promise<void> {
     { label: 'Tailwind CSS CDN',         pattern: 'cdn.tailwindcss.com' },
     { label: 'Lucide icons CDN',         pattern: 'unpkg.com/lucide' },
     { label: 'Tailwind custom colors',   pattern: 'warm-black' },
-    { label: 'Unsplash hero image',      pattern: 'source.unsplash.com' },
+    { label: 'Unsplash hero image',      pattern: 'images.unsplash.com' },
     { label: 'JSON-LD Restaurant schema',pattern: 'application/ld+json' },
     { label: 'Open Graph tags',          pattern: 'og:title' },
     { label: 'Reservation section',      pattern: 'Reserve' },

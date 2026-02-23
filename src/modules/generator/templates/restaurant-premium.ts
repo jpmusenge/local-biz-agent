@@ -50,7 +50,7 @@ export function checkWebsiteQuality(html: string): QualityCheckResult {
 
   // ── Soft warnings ──────────────────────────────────────────────
 
-  if (!html.includes('source.unsplash.com')) {
+  if (!html.includes('images.unsplash.com')) {
     warnings.push('No Unsplash images found — website may lack visual impact');
   }
 
@@ -148,7 +148,7 @@ Include all of these in <head>:
 - \`<meta name="description" content="[Compelling 155-char description mentioning ${business.name} and ${business.city}, ${business.state}]">\`
 - \`<meta property="og:title" content="${business.name} | ${business.city}, ${business.state}">\`
 - \`<meta property="og:description" content="[Same as meta description]">\`
-- \`<meta property="og:image" content="https://source.unsplash.com/1200x630/?restaurant,fine-dining,interior">\`
+- \`<meta property="og:image" content="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&h=630&q=80">\`
 - \`<meta property="og:type" content="restaurant">\`
 - \`<link rel="canonical" href="#">\`
 
@@ -193,16 +193,42 @@ Typography rules:
 - Section headings: text-4xl md:text-5xl, font-semibold
 - Eyebrow labels: text-xs tracking-[0.25em] uppercase font-body font-medium text-gold
 
-Image rules — use Unsplash Source API (these URLs return real photos):
-- Hero: https://source.unsplash.com/1920x1080/?restaurant,fine-dining,interior
-- Chef/about: https://source.unsplash.com/900x1100/?chef,restaurant,cooking
-- Gallery images (use 6 varied searches):
-  https://source.unsplash.com/800x600/?restaurant,ambiance
-  https://source.unsplash.com/800x600/?food,gourmet,plate
-  https://source.unsplash.com/600x800/?cocktail,drink,bar
-  https://source.unsplash.com/800x600/?dessert,pastry,chocolate
-  https://source.unsplash.com/800x600/?dining,table,candlelight
-  https://source.unsplash.com/600x800/?wine,cellar,bottle
+Image rules — use images.unsplash.com with this format:
+  https://images.unsplash.com/{photo-id}?auto=format&fit=crop&w={width}&h={height}&q=80
+
+IMPORTANT: source.unsplash.com is shut down — DO NOT use it. Only use images.unsplash.com.
+
+Use ONLY the photo IDs from the curated library below — do not invent IDs.
+
+**Hero background** — pick one (full-bleed, 1920×1080):
+  photo-1517248135467-4c7edcad34c4  (warm, candlelit restaurant interior)
+  photo-1414235077428-338989a2e8c0  (elegant dining room, orange warmth)
+  photo-1424847651672-bf20a4b0982b  (intimate evening restaurant)
+
+**Chef / About portrait** — pick one (900×1100):
+  photo-1556909114-f6e7ad7d3136    (chef in professional kitchen)
+  photo-1607631568010-a87245c0daf2  (chef plating a dish)
+  photo-1581299894007-aaa50297cf16  (chef at work, white jacket)
+
+**Menu item photos** — pick 6 that match the dishes (600×400 each):
+  photo-1504674900247-0877df9cc836  (beautiful food spread, top-down)
+  photo-1476224203421-9ac39bcb3df1  (gourmet plated dish)
+  photo-1565299585323-38d6b0865b47  (fine dining close-up)
+  photo-1555396273-367ea4eb4db5    (pasta dish, rustic)
+  photo-1432139555190-58524dae6a55  (classic pizza, wood-fired)
+  photo-1565958011703-44f9829ba187  (elegant dessert plating)
+  photo-1544025162-d76538537a78    (grilled steak / BBQ meat)
+  photo-1534482421-64566f976cfa    (shrimp / seafood dish)
+  photo-1512621776951-a57141f2eefd  (fresh salad)
+  photo-1473093226795-af9932fe5856  (fish / seafood plated)
+
+**Gallery images** — use all 6 in varied aspect ratios:
+  photo-1559329007-40df8a9345d8    (restaurant table setting — 800×600)
+  photo-1536935338788-846bb9981813  (craft cocktails — 600×800)
+  photo-1510812431401-41d2bd2722f3  (wine bottles in cellar — 600×800)
+  photo-1466978913421-dad2ebd01d17  (warm dining atmosphere — 800×600)
+  photo-1414235077428-338989a2e8c0  (restaurant interior — 800×600)
+  photo-1504674900247-0877df9cc836  (food spread — 800×600)
 
 ## SECTIONS (build exactly these, in this order)
 
@@ -215,7 +241,7 @@ Image rules — use Unsplash Source API (these URLs return real photos):
 - Mobile: hamburger (Lucide "menu" icon) toggles mobile nav, close with Lucide "x" icon
 
 ### 2. HERO (min-h-screen)
-- Full-bleed background image via inline style: background-image: url('https://source.unsplash.com/1920x1080/?restaurant,fine-dining,interior'); background-size: cover; background-position: center; background-attachment: fixed;
+- Full-bleed background image via inline style: background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1920&q=80'); background-size: cover; background-position: center; background-attachment: fixed;
 - Layered overlays: absolute inset-0 bg-gradient-to-b from-warm-black/70 via-warm-black/50 to-warm-black/80
 - Centered content (flex items-center justify-center):
   - Eyebrow: "${business.city}, ${business.state}" in gold small caps tracking-widest
@@ -236,7 +262,7 @@ Image rules — use Unsplash Source API (these URLs return real photos):
   - Founding year: mention a year (pick something between 2008 and 2019 that sounds natural)
   - A small detail stat row: "Est. [year]" | "[City] Grown" | "Family Owned" in gold with text-gold dividers
 - RIGHT column (image):
-  - Full-height image: <img src="https://source.unsplash.com/900x1100/?chef,restaurant,cooking" alt="Chef at ${business.name}" class="w-full h-full object-cover rounded-sm" loading="lazy">
+  - Full-height image: <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=900&h=1100&q=80" alt="Chef at ${business.name}" class="w-full h-full object-cover rounded-sm" loading="lazy">
   - Subtle gold border offset: position relative, after pseudo-element or a div offset border in gold/20
 
 ### 4. MENU HIGHLIGHTS — "Signature Dishes"
@@ -252,7 +278,7 @@ Generate exactly 6 menu items appropriate for a restaurant in ${business.city}, 
 
 Card layout (grid sm:grid-cols-2 lg:grid-cols-3 gap-6):
 Each card:
-- Unsplash food image at top: <img src="https://source.unsplash.com/600x400/?[food-keyword],food,plated" loading="lazy" class="w-full h-48 object-cover">
+- Unsplash food image at top — pick from the menu item library above, e.g.: <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&h=400&q=80" loading="lazy" class="w-full h-48 object-cover">
 - Below image: padding, dish name, price badge (text-gold font-semibold), description
 - Hover: scale-[1.02] shadow-2xl border-t-2 border-gold transition-all duration-300
 - Card bg: bg-warm-card border border-warm-muted/20
@@ -260,7 +286,7 @@ Each card:
 ### 5. GALLERY
 - Heading: "The Atmosphere"
 - CSS column layout: columns-2 md:columns-3 gap-3
-- 6 images with different Unsplash searches (varied aspect ratios — some portrait, some landscape, add break-inside-avoid to each)
+- 6 images from the Gallery library above (varied aspect ratios — some portrait, some landscape, add break-inside-avoid to each)
 - Each image: rounded-sm overflow-hidden, hover:opacity-90 transition, cursor-zoom-in
 - All images get loading="lazy" and descriptive alt text
 
@@ -336,13 +362,18 @@ Add a <script> block before </body> with:
 - NO generic headings like "Welcome to Our Restaurant" or "About Us" (use specific, evocative headings)
 - NO placeholder prices like "$XX" — use real dollar amounts
 - ALL images must have descriptive alt attributes and loading="lazy"
-- Add \`scroll-behavior: smooth\` to <html>
+- The <html> opening tag MUST include \`style="scroll-behavior: smooth;"\` — this is non-negotiable
 - Semantic HTML: use <header>, <nav>, <main>, <section>, <footer>, <article>
 - Every section must have id attribute for nav anchor links
 
 ## OUTPUT
 
 Return ONLY the complete HTML. No markdown, no explanation, no code fences.
-Start with \`<!DOCTYPE html>\` and end with \`</html>\`.
-The full output must be at least 500 lines of well-formatted HTML.`;
+The document MUST begin with exactly:
+\`\`\`
+<!DOCTYPE html>
+<html lang="en" style="scroll-behavior: smooth;">
+\`\`\`
+The \`style="scroll-behavior: smooth;"\` attribute on <html> is REQUIRED — do not omit it.
+End with \`</html>\`. The full output must be at least 500 lines of well-formatted HTML.`;
 }
