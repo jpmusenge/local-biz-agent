@@ -138,6 +138,10 @@ export class GeminiClient {
     const htmlEndIndex = html.toLowerCase().lastIndexOf('</html>');
     if (htmlEndIndex !== -1) {
       html = html.slice(0, htmlEndIndex + 7);
+    } else {
+      // Generation was cut off before </html> — close it gracefully
+      if (!html.includes('</body>')) html += '\n</body>';
+      html += '\n</html>';
     }
 
     return html.trim();

@@ -29,8 +29,8 @@ export class ClaudeClient {
   // Model to use for generation
   private static readonly MODEL = 'claude-sonnet-4-6';
 
-  // Max tokens for website generation — full HTML sites can exceed 8k tokens
-  private static readonly MAX_TOKENS = 16000;
+  // Max tokens for website generation — full HTML sites with integrations can reach 15k+ tokens
+  private static readonly MAX_TOKENS = 20000;
 
   constructor() {
     this.apiKey = config.get('ANTHROPIC_API_KEY') ?? null;
@@ -152,6 +152,10 @@ export class ClaudeClient {
     const htmlEndIndex = html.toLowerCase().lastIndexOf('</html>');
     if (htmlEndIndex !== -1) {
       html = html.slice(0, htmlEndIndex + 7);
+    } else {
+      // Generation was cut off before </html> — close it gracefully
+      if (!html.includes('</body>')) html += '\n</body>';
+      html += '\n</html>';
     }
 
     return html.trim();

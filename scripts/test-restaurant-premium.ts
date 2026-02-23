@@ -170,10 +170,18 @@ async function main(): Promise<void> {
     { label: 'Unsplash hero image',      pattern: 'images.unsplash.com' },
     { label: 'JSON-LD Restaurant schema',pattern: 'application/ld+json' },
     { label: 'Open Graph tags',          pattern: 'og:title' },
-    { label: 'Reservation section',      pattern: 'Reserve' },
     { label: 'Smooth scroll',            pattern: 'scroll-behavior' },
     { label: 'IntersectionObserver',     pattern: 'IntersectionObserver' },
     { label: 'Lucide init',              pattern: 'lucide.createIcons' },
+    // Functional integrations
+    { label: 'Business config block',    pattern: 'BUSINESS CONFIG' },
+    { label: 'Formspree form',           pattern: 'formspree.io' },
+    { label: 'tel: phone links',         pattern: 'href="tel:' },
+    { label: 'Google Maps directions',   pattern: 'google.com/maps' },
+    { label: 'Analytics data-track',     pattern: 'data-track=' },
+    { label: 'Facebook social link',     pattern: 'social-facebook' },
+    { label: 'Instagram social link',    pattern: 'social-instagram' },
+    { label: 'Yelp social link',         pattern: 'social-yelp' },
   ];
 
   console.log('');

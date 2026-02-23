@@ -74,6 +74,22 @@ export function checkWebsiteQuality(html: string): QualityCheckResult {
     warnings.push('Missing smooth scroll behavior');
   }
 
+  if (!html.includes('formspree.io')) {
+    warnings.push('Missing Formspree form action — contact form will not submit');
+  }
+
+  if (!html.includes('data-track=')) {
+    warnings.push('Missing data-track analytics attributes');
+  }
+
+  if (!html.includes('BUSINESS CONFIG')) {
+    warnings.push('Missing business config comment block at top of file');
+  }
+
+  if (!html.includes('maps.google.com') && !html.includes('google.com/maps')) {
+    warnings.push('Missing Google Maps directions link');
+  }
+
   return {
     passed: issues.length === 0,
     issues,
@@ -95,6 +111,9 @@ export function buildRestaurantPremiumPrompt(business: BusinessInfo): string {
   const phone = business.phone ?? '(662) 555-0142';
   const address = business.address ?? `${business.city}, ${business.state}`;
   const year = new Date().getFullYear();
+  const phoneDigits = phone.replace(/\D/g, '');
+  const fullAddress = `${address}, ${business.city}, ${business.state}`;
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
 
   return `You are a senior frontend engineer at a top-tier digital agency (think Instrument, Fantasy Interactive, or Huge). Your client is a local restaurant that needs a website that looks like it cost $3,000 to build. Every detail matters.
 
@@ -237,7 +256,7 @@ Use ONLY the photo IDs from the curated library below — do not invent IDs.
 - After 80px scroll (JS): bg-warm-black/95 backdrop-blur-md border-b border-gold/10 shadow-xl
 - Left: restaurant name in font-display text-2xl text-gold
 - Desktop nav: About, Menu, Gallery, Reviews, Contact (text-stone-300 hover:text-gold transition)
-- Right CTA: "Reserve a Table" — border border-gold text-gold px-5 py-2 text-sm tracking-wide hover:bg-gold hover:text-warm-black transition-all
+- Right CTA: "Reserve a Table" — \`<a href="#reservation" data-track="nav-reserve">\` — border border-gold text-gold px-5 py-2 text-sm tracking-wide hover:bg-gold hover:text-warm-black transition-all
 - Mobile: hamburger (Lucide "menu" icon) toggles mobile nav, close with Lucide "x" icon
 
 ### 2. HERO (min-h-screen)
@@ -248,8 +267,8 @@ Use ONLY the photo IDs from the curated library below — do not invent IDs.
   - Headline: font-display italic text-6xl lg:text-8xl text-stone-50 leading-none — write a SHORT, evocative headline (NOT "A Taste Worth Coming Back For" — be more specific to the restaurant or city character)
   - Tagline: 1 sentence, font-body font-light text-stone-300 text-xl max-w-xl mx-auto
   - Two CTAs in a flex gap-4 row:
-    * Primary: "Reserve a Table" — bg-gold text-warm-black px-8 py-4 font-body font-semibold tracking-wide hover:bg-gold-dark transition-all hover:-translate-y-0.5 hover:shadow-xl
-    * Ghost: "Explore the Menu" — border border-stone-400 text-stone-200 px-8 py-4 hover:border-gold hover:text-gold transition-all
+    * Primary: \`<a href="tel:${phoneDigits}" data-track="hero-call" class="...">\` "Call to Reserve" — bg-gold text-warm-black px-8 py-4 font-body font-semibold tracking-wide hover:bg-gold-dark transition-all hover:-translate-y-0.5 hover:shadow-xl inline-flex items-center gap-2; include a Lucide "phone" icon
+    * Ghost: \`<a href="#reservation" data-track="hero-reserve" class="...">\` "Reserve Online" — border border-stone-400 text-stone-200 px-8 py-4 hover:border-gold hover:text-gold transition-all
 - Bottom: scroll indicator — Lucide "chevron-down" icon animated with CSS bounce, text-gold/60
 
 ### 3. ABOUT
@@ -303,12 +322,14 @@ Each card:
 
 ### 7. LOCATION & HOURS
 - Two-column: md:grid-cols-2 gap-12 py-24
-- LEFT: Map placeholder
-  - \`<div class="w-full aspect-video bg-warm-surface border border-warm-muted/20 rounded-sm flex flex-col items-center justify-center gap-3">\`
-  - Inside: Lucide "map-pin" icon (w-10 h-10 text-gold), text "Find Us on the Map", address in text-warm-muted
+- LEFT: Google Maps placeholder (clickable link)
+  - Wrap in: \`<a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" data-track="get-directions" class="block group">\`
+  - Inside: \`<div class="w-full aspect-video bg-warm-surface border border-warm-muted/20 rounded-sm flex flex-col items-center justify-center gap-3 group-hover:border-gold/40 transition-colors">\`
+  - Lucide "map-pin" icon (w-10 h-10 text-gold), "Get Directions" in text-stone-200 font-semibold, address in text-warm-muted text-sm
+  - Small label: "Opens Google Maps" in text-warm-muted text-xs mt-1
 - RIGHT: Info column
-  - Address with Lucide "map-pin" (inline): ${address}
-  - Phone with Lucide "phone": <a href="tel:${phone.replace(/\D/g, '')}">${phone}</a>
+  - Address with Lucide "map-pin": \`<a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" data-track="get-directions" class="hover:text-gold transition-colors">${address}</a>\`
+  - Phone with Lucide "phone": \`<a href="tel:${phoneDigits}" data-track="contact-call" class="hover:text-gold transition-colors">${phone}</a>\`
   - Hours table: use \`<dl>\` pattern with day/hours pairs, highlight today in text-gold font-semibold
     * Mon–Thu: 11:00 AM – 9:00 PM
     * Fri–Sat: 11:00 AM – 10:00 PM
@@ -316,20 +337,42 @@ Each card:
 
 ### 8. RESERVATION / CONTACT
 - Background: bg-warm-surface
-- Centered two-column (form + contact details)
+- id="reservation" on the section element
+- Centered two-column (form left, contact details right)
 - Heading: "Reserve Your Table"
-- Form fields (styled inputs: bg-warm-card border border-warm-muted/30 text-stone-200 focus:border-gold outline-none px-4 py-3 w-full rounded-sm):
-  - Name (text), Email (email), Phone (tel)
-  - Party Size (select: "1–2 guests", "3–4 guests", "5–6 guests", "7+ guests")
-  - Preferred Date (date input)
-  - Special requests (textarea rows-4)
-  - Submit: "Request Reservation" — full-width bg-gold text-warm-black font-semibold py-4 hover:bg-gold-dark transition
-- Right side (contact details): phone, email (mailto:info@example.com), address — each with Lucide icon
+- Form — use Formspree for submission:
+  \`\`\`html
+  <form action="https://formspree.io/f/FORMSPREE_ID" method="POST" data-track="reservation-form">
+    <!-- Hidden fields for Formspree routing -->
+    <input type="hidden" name="_subject" value="Reservation Request — ${business.name}">
+    <input type="hidden" name="business" value="${business.name}">
+    <input type="hidden" name="location" value="${address}">
+    <!-- Honeypot spam filter (must stay hidden) -->
+    <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off">
+  \`\`\`
+- Visible form fields (styled: bg-warm-card border border-warm-muted/30 text-stone-200 focus:border-gold outline-none px-4 py-3 w-full rounded-sm transition-colors):
+  - Name (text, name="name", required)
+  - Email (email, name="email", required)
+  - Phone (tel, name="phone")
+  - Party Size (select, name="party_size": "1–2 guests", "3–4 guests", "5–6 guests", "7+ guests")
+  - Preferred Date (date, name="date")
+  - Special requests (textarea rows-4, name="message")
+  - Submit: \`<button type="submit" data-track="reservation-submit">\` "Request Reservation" — full-width bg-gold text-warm-black font-semibold py-4 hover:bg-gold-dark transition tracking-wide
+- Right side (contact details) — all links must be functional:
+  - Phone: \`<a href="tel:${phoneDigits}" data-track="contact-call" class="hover:text-gold transition-colors">${phone}</a>\` with Lucide "phone" icon
+  - Email: \`<a href="mailto:info@example.com" data-track="contact-email" class="hover:text-gold transition-colors">info@example.com</a>\` with Lucide "mail" icon
+  - Address: \`<a href="${mapsUrl}" target="_blank" rel="noopener" data-track="get-directions" class="hover:text-gold transition-colors">${address}</a>\` with Lucide "map-pin" icon
+  - "Call to Reserve" CTA button below contact info: \`<a href="tel:${phoneDigits}" data-track="reservation-call" class="...">\` — full-width border border-gold text-gold py-3 hover:bg-gold hover:text-warm-black transition inline-flex items-center justify-center gap-2; Lucide "phone" icon + "Call ${phone}"
 
 ### 9. FOOTER
 - bg-warm-black border-t border-warm-muted/20
 - Three columns: brand (name + tagline + socials), Quick Links, Hours Summary
-- Social icons: Lucide "instagram", "facebook", "twitter" — w-5 h-5 text-warm-muted hover:text-gold
+- Social icons — use these exact href/id values (client updates the URLs):
+  * Facebook: \`<a href="https://facebook.com/FACEBOOK_PAGE" id="social-facebook" target="_blank" rel="noopener" data-track="social-facebook" aria-label="Facebook">\` — Lucide "facebook" icon w-5 h-5 text-warm-muted hover:text-gold transition
+  * Instagram: \`<a href="https://instagram.com/INSTAGRAM_HANDLE" id="social-instagram" target="_blank" rel="noopener" data-track="social-instagram" aria-label="Instagram">\` — Lucide "instagram" icon w-5 h-5 text-warm-muted hover:text-gold transition
+  * Yelp: \`<a href="https://yelp.com/biz/YELP_SLUG" id="social-yelp" target="_blank" rel="noopener" data-track="social-yelp" aria-label="Yelp">\` — SVG star icon or bold "Y" text badge in text-warm-muted hover:text-gold transition
+- Footer phone link: \`<a href="tel:${phoneDigits}" data-track="footer-call" class="hover:text-gold transition-colors">${phone}</a>\`
+- Footer address link: \`<a href="${mapsUrl}" target="_blank" rel="noopener" data-track="footer-directions" class="hover:text-gold transition-colors">${address}</a>\`
 - Bottom bar: copyright © ${year} ${business.name} · All rights reserved
 
 ## ANIMATIONS
@@ -369,11 +412,26 @@ Add a <script> block before </body> with:
 ## OUTPUT
 
 Return ONLY the complete HTML. No markdown, no explanation, no code fences.
-The document MUST begin with exactly:
+The document MUST begin with exactly this (include the full config comment):
+
 \`\`\`
 <!DOCTYPE html>
+<!--
+  ================================================================
+  BUSINESS CONFIG — Edit these values before delivering to client
+  ================================================================
+  FORMSPREE_ID:  your_form_id          (replace in form action URL)
+  PHONE:         ${phone}
+  ADDRESS:       ${fullAddress}
+  MAPS_URL:      ${mapsUrl}
+  FACEBOOK:      https://facebook.com/FACEBOOK_PAGE
+  INSTAGRAM:     https://instagram.com/INSTAGRAM_HANDLE
+  YELP:          https://yelp.com/biz/YELP_SLUG
+  ================================================================
+-->
 <html lang="en" style="scroll-behavior: smooth;">
 \`\`\`
-The \`style="scroll-behavior: smooth;"\` attribute on <html> is REQUIRED — do not omit it.
+
+The config comment block and \`style="scroll-behavior: smooth;"\` on <html> are REQUIRED — do not omit either.
 End with \`</html>\`. The full output must be at least 500 lines of well-formatted HTML.`;
 }
